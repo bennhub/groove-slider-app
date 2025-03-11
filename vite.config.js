@@ -8,7 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      '/src': path.resolve(__dirname, 'src')  // Add this line
+      '/src': path.resolve(__dirname, 'src')
     }
   },
   server: {
@@ -16,9 +16,16 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
-      'Service-Worker-Allowed': '/',
-      'Access-Control-Allow-Origin': '*' 
-    }
+      'Service-Worker-Allowed': '/'
+    },
+    proxy: {
+      "/audius-api": {
+        target: "https://api.audius.co",
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/audius-api/, ""),
+      },
+    },
   },
   optimizeDeps: {
     exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
@@ -29,7 +36,7 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, 'index.html')  // Changed this line
+        main: path.resolve(__dirname, 'index.html')
       },
       output: {
         manualChunks: {

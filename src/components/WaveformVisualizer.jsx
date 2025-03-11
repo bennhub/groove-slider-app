@@ -224,10 +224,10 @@ const WaveformVisualizer = ({
   // Load audio data and retrieve positions from IndexedDB
   useEffect(() => {
     if (!audioUrl || loadedAudioUrlRef.current === audioUrl) return;
-
+  
     loadedAudioUrlRef.current = audioUrl;
     setIsLoading(true);
-
+  
     const loadAudioAndPositions = async () => {
       try {
         // First check if we have cached visualizer state and audio buffer
@@ -235,29 +235,65 @@ const WaveformVisualizer = ({
           getVisualizerState(audioUrl),
           getStoredAudioBuffer(audioUrl),
         ]);
-
+  
         // Initialize audio context
         const audioContext = new (window.AudioContext ||
           window.webkitAudioContext)();
-
-        let buffer;
-        if (cachedBuffer) {
-          // Use cached buffer if available
-          buffer = cachedBuffer.buffer;
-          console.log("Using cached audio buffer");
-        } else {
-          // Fetch and decode audio file if no cached buffer
-          const response = await fetch(audioUrl);
-          const arrayBuffer = await response.arrayBuffer();
-          buffer = await audioContext.decodeAudioData(arrayBuffer);
-
-          // Store the decoded buffer for future use
-          await storeAudioBuffer(audioUrl, buffer);
-        }
-
+  
+          let buffer;
+          if (cachedBuffer) {
+            // Use cached buffer if available
+            buffer = cachedBuffer.buffer;
+            console.log("Using cached audio buffer");
+          } else {
+            // Handle different URL types
+            let arrayBuffer;
+            
+            try {
+              // Check if this is an Audius URL (which might need special handling)
+              if (audioUrl.includes('audius.co/')) {
+                console.log('Detected Audius web URL, attempting to use streaming URL');
+                
+                // Extract the track ID if it's an Audius URL
+                const urlParts = audioUrl.split('/');
+                const trackId = urlParts[urlParts.length - 1].split('.')[0]; // Remove file extension if present
+                
+                // Use our Cloudflare proxy
+                const proxyUrl = `https://lingering-surf-27dd.benhayze.workers.dev/${trackId}`;
+                console.log(`Using proxy URL for Audius: ${proxyUrl}`);
+                
+                const response = await fetch(proxyUrl);
+                
+                if (!response.ok) {
+                  throw new Error(`Proxy returned status: ${response.status}`);
+                }
+                
+                arrayBuffer = await response.arrayBuffer();
+              } else {
+                // Standard fetch for direct stream URLs or other sources
+                const response = await fetch(audioUrl);
+                arrayBuffer = await response.arrayBuffer();
+              }
+              
+              // Decode the audio data
+              buffer = await audioContext.decodeAudioData(arrayBuffer);
+              
+              // Store the decoded buffer for future use
+              await storeAudioBuffer(audioUrl, buffer);
+            } catch (fetchError) {
+              console.error("Error fetching or decoding audio:", fetchError);
+              
+              // Provide user feedback
+              setIsLoading(false);
+              
+              // Rethrow to stop further processing
+              throw new Error(`Could not load audio: ${fetchError.message}`);
+            }
+          }
+  
         setAudioBuffer(buffer);
         setDuration(buffer.duration);
-
+  
         // Restore cached state if available
         if (cachedState) {
           // Restore zoom level and waveform offset
@@ -267,8 +303,7 @@ const WaveformVisualizer = ({
           if (cachedState.waveformOffset !== undefined) {
             setWaveformOffset(cachedState.waveformOffset);
           }
-          // Removed followPlayhead restoration as we discussed earlier
-
+  
           // Restore start point if different
           if (
             onStartPointChange &&
@@ -278,14 +313,14 @@ const WaveformVisualizer = ({
             onStartPointChange(cachedState.startPoint);
           }
         }
-
+  
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading audio:", error);
         setIsLoading(false);
       }
     };
-
+  
     loadAudioAndPositions();
   }, [audioUrl, onStartPointChange, musicStartPoint]);
 

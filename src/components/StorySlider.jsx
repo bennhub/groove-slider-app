@@ -53,6 +53,8 @@ import "./sessionStyles.css";
 import WaveformVisualizer from "./WaveformVisualizer";
 // Beat detect
 import { analyze } from "web-audio-beat-detector";
+// Audius Track Search
+import AudiusTrackSearch from './AudiusTrackSearch'; 
 
 //==============================================
 // DEVICE DETECTION
@@ -256,6 +258,7 @@ const MusicPanel = ({
 }) => {
   // State
   const [currentTime, setCurrentTime] = useState(0);
+  const [isAudiusModalOpen, setIsAudiusModalOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(1);
   const [duration, setDuration] = useState(0);
@@ -291,37 +294,68 @@ const MusicPanel = ({
     try {
       console.log("Starting BPM detection...");
       setIsAnalyzing(true);
-
+  
       // Create a separate audio context just for BPM detection
       const bpmAudioContext = new (window.AudioContext ||
         window.webkitAudioContext)();
-
-      // Fetch the audio data
-      const response = await fetch(audioUrl);
-      const arrayBuffer = await response.arrayBuffer();
-
+  
+      // Fetch the audio data with Audius handling
+      let arrayBuffer;
+      try {
+        if (audioUrl.includes('audius.co/')) {
+          // Extract the track ID if it's an Audius URL
+          const urlParts = audioUrl.split('/');
+          const trackId = urlParts[urlParts.length - 1].split('.')[0]; // Remove file extension if present
+          
+          // Use our Cloudflare proxy
+          const proxyUrl = `https://lingering-surf-27dd.benhayze.workers.dev/${trackId}`;
+          console.log(`Using proxy URL for Audius: ${proxyUrl}`);
+          
+          const response = await fetch(proxyUrl);
+          
+          if (!response.ok) {
+            throw new Error(`Proxy returned status: ${response.status}`);
+          }
+          
+          arrayBuffer = await response.arrayBuffer();
+        } else {
+          // Standard fetch for other URLs
+          const response = await fetch(audioUrl);
+          arrayBuffer = await response.arrayBuffer();
+        }
+      } catch (fetchError) {
+        console.error("Failed to fetch audio for BPM detection:", fetchError);
+        return 120; // Default fallback BPM
+      }
+      
       console.log("Audio data fetched, decoding...");
-
+  
       // Decode the audio data
-      const audioBuffer = await bpmAudioContext.decodeAudioData(arrayBuffer);
-
+      let audioBuffer;
+      try {
+        audioBuffer = await bpmAudioContext.decodeAudioData(arrayBuffer);
+      } catch (decodeError) {
+        console.error("Failed to decode audio for BPM detection:", decodeError);
+        return 120; // Default fallback BPM
+      }
+  
       console.log("Audio decoded, analyzing tempo...");
-
+  
       // Use the web-audio-beat-detector library to analyze the tempo
       const detectedTempo = await analyze(audioBuffer);
-
+  
       console.log(`Raw detected tempo: ${detectedTempo}`);
-
+  
       // Adjust for double-time if needed
       // If the detected tempo is above 140, it's likely double-time
       let adjustedTempo = detectedTempo;
       if (detectedTempo > 140) {
         adjustedTempo = detectedTempo / 2;
       }
-
+  
       const finalTempo = Math.round(adjustedTempo);
       console.log(`Final detected BPM: ${finalTempo}`);
-
+  
       return finalTempo;
     } catch (error) {
       console.error("BPM detection failed:", error);
@@ -428,51 +462,55 @@ const MusicPanel = ({
   /**
    * Fixed play/pause handler that prevents the timing jump
    */
-  const handlePlayPause = async () => {
-    if (!controlsRef.current) return;
-
+/**
+ * Fixed play/pause handler that prevents the timing jump
+ */
+// Simplified handlePlayPause function
+const handlePlayPause = async () => {
+  try {
     if (isPlaying) {
-      // Pause logic - this is simple
-      controlsRef.current.pause();
+      // Simply stop everything
+      console.log("Pausing playback");
+      stopAutoRotation();
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       setIsPlaying(false);
     } else {
+      console.log("Starting playback");
+      
+      // Reset to first slide if we're at the end
+      if (currentIndex === stories.length - 1) {
+        setCurrentIndex(0);
+      }
+
+      // Create a fresh audio element to avoid stale state
+      const freshAudio = new Audio(musicUrl);
+      
+      // Set the start time
+      freshAudio.currentTime = musicStartPoint;
+      
+      // Store the fresh audio element
+      audioRef.current = freshAudio;
+      
       try {
-        // Play logic - this needs to be precise
-
-        // 1. Store the EXACT time where we want to start
-        const exactStartTime = controlsRef.current.currentTime;
-        intendedTimeRef.current = exactStartTime;
-
-        // 2. Set the current time explicitly right before playing
-        controlsRef.current.currentTime = exactStartTime;
-
-        // 3. Resume the AudioContext to avoid delays
-        if (audioContext && audioContext.state === "suspended") {
-          await audioContext.resume();
-        }
-
-        // 4. Start precise playback
-        await controlsRef.current.play();
-
-        // 5. Set up a backup check that forces the correct start time
-        setTimeout(() => {
-          if (
-            Math.abs(controlsRef.current.currentTime - exactStartTime) > 0.005
-          ) {
-            console.log(
-              `Forced correction: ${controlsRef.current.currentTime} -> ${exactStartTime}`
-            );
-            controlsRef.current.currentTime = exactStartTime;
-          }
-        }, 10);
-
+        // Start audio playback
+        await freshAudio.play();
+        console.log("Audio playback started");
+        
+        // Start the slideshow
+        startAutoRotation();
+        
         setIsPlaying(true);
-      } catch (err) {
-        console.error("Playback error:", err);
-        intendedTimeRef.current = null;
+      } catch (playError) {
+        console.error("Failed to play audio:", playError);
+        alert("Unable to play audio. Please try again.");
       }
     }
-  };
+  } catch (error) {
+    console.error("Error in handlePlayPause:", error);
+  }
+};
 
   /**
    * Format time with millisecond precision
@@ -577,7 +615,8 @@ const MusicPanel = ({
               className="bpm-input"
             />
           </div>
-
+          
+          
           {/* Music upload button now inside the bpm-control div */}
           <label className="upload-button">
             <Music className="icon" />
@@ -671,6 +710,126 @@ const MusicPanel = ({
               className="hidden-input"
             />
           </label>
+           {/* New Audius Tracks Button */}
+  <button 
+    onClick={() => setIsAudiusModalOpen(true)}
+    style={{
+      background: '#1DB954', // Spotify green for Audius feel
+      color: 'white',
+      border: 'none',
+      padding: '10px',
+      borderRadius: '5px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px'
+    }}
+  >
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="currentColor"
+    >
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-12.5v9l6-4.5z"/>
+    </svg>
+    Audius Tracks
+  </button>
+
+  {/* Audius Tracks Modal */}
+  {isAudiusModalOpen && (
+  <div 
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000
+    }}
+    onClick={() => setIsAudiusModalOpen(false)}
+  >
+    <div 
+      style={{
+        background: 'white',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '90%',
+        maxWidth: '800px',
+        maxHeight: '80%',
+        overflowY: 'auto',
+        position: 'relative'
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button 
+        onClick={() => setIsAudiusModalOpen(false)}
+        style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          background: 'red',
+          color: 'white',
+          border: 'none',
+          borderRadius: '50%',
+          width: '30px',
+          height: '30px',
+          cursor: 'pointer'
+        }}
+      >
+        X
+      </button>
+      <AudiusTrackSearch 
+        onTrackSelect={(track) => {
+          try {
+            // The track object should have a streamUrl property
+            if (!track.streamUrl) {
+              throw new Error("Track doesn't have a streamUrl");
+            }
+            
+            // Set the music URL
+            onUpload(track.streamUrl);
+
+            // Start BPM detection
+            setIsAnalyzing(true);
+            detectBPM(track.streamUrl)
+              .then(detectedBPM => {
+                console.log(`Final detected BPM: ${detectedBPM}`);
+                onBPMChange(detectedBPM);
+              })
+              .catch(err => {
+                console.error("BPM detection failed:", err);
+                onBPMChange(120); // Default to 120 BPM if detection fails
+              })
+              .finally(() => {
+                setIsAnalyzing(false);
+              });
+
+            // Reset start point to beginning
+            onStartPointChange(0);
+
+            // Reset audio state
+            if (controlsRef.current) {
+              controlsRef.current.src = track.streamUrl;
+              controlsRef.current.currentTime = 0;
+            }
+
+            // Close the modal
+            setIsAudiusModalOpen(false);
+          } catch (error) {
+            console.error('Error selecting Audius track:', error);
+            alert('Unable to play this track. Please try another one.');
+          }
+        }}
+      />
+    </div>
+  </div>
+)}
+
         </div>
 
         <div className="music-player">
@@ -1718,6 +1877,7 @@ const StorySlider = () => {
   const [musicUrl, setMusicUrl] = useState(null);
   const [bpm, setBpm] = useState(120);
   const [musicStartPoint, setMusicStartPoint] = useState(0);
+  // Audius Track Search 
   // Looping State
   const [isLoopingEnabled, setIsLoopingEnabled] = useState(true);
   // Image Preload
@@ -1726,8 +1886,11 @@ const StorySlider = () => {
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   // Refs
-  const audioRef = useRef(null);
+  const audioRef = useRef(new Audio());
   const intervalRef = useRef(null);
+
+  // audius 
+  const [isAudiusModalOpen, setIsAudiusModalOpen] = useState(false);
 
   // save edit panel
   const saveStateOnEditPanelToggle = async (isOpen) => {
@@ -1928,46 +2091,94 @@ const StorySlider = () => {
 
   const handlePlayPause = async () => {
     if (isPlaying) {
+      // Pause logic
       stopAutoRotation();
       if (audioRef.current) {
         audioRef.current.pause();
       }
       setIsPlaying(false);
     } else {
+      // Play logic
       if (currentIndex === stories.length - 1) {
         setCurrentIndex(0);
       }
-
-      // Start the rotation first
-      startAutoRotation();
-
-      if (audioRef.current && musicUrl) {
-        // Store exact intended time
-        const exactStartTime = musicStartPoint;
-
-        // Set it precisely before attempting to play
-        audioRef.current.currentTime = exactStartTime;
-
-        try {
+  
+      try {
+        // Instead of creating a new Audio element, update the existing one
+        if (audioRef.current) {
+          // Set the source if needed
+          if (audioRef.current.src !== musicUrl) {
+            audioRef.current.src = musicUrl;
+          }
+          
+          // Set the current time to the start point
+          audioRef.current.currentTime = musicStartPoint;
+          
+          // This is the key change - we're keeping the same audio reference
+          // that the waveform visualizer is using, just updating its properties
+          
+          // Start the slideshow
+          startAutoRotation();
+          
+          // Try to play the audio
+          console.log("Attempting to play using existing audio reference");
           await audioRef.current.play();
-
-          // Immediately verify and correct any timing drift after playback starts
-          setTimeout(() => {
-            if (
-              Math.abs(audioRef.current.currentTime - exactStartTime) > 0.01
-            ) {
-              console.log("Correcting audio timing drift on play");
-              audioRef.current.currentTime = exactStartTime;
-            }
-          }, 10);
-        } catch (err) {
-          console.log("Play error:", err);
+          console.log("Playback started with existing audio reference");
+        } else {
+          // Fallback if no audio reference exists
+          const newAudio = new Audio(musicUrl);
+          newAudio.currentTime = musicStartPoint;
+          audioRef.current = newAudio;
+          
+          // Start the slideshow
+          startAutoRotation();
+          
+          await newAudio.play();
+          console.log("Playback started with new audio reference");
         }
+        
+        setIsPlaying(true);
+      } catch (err) {
+        console.error("Play error:", err);
+        alert("Unable to play audio. The slideshow will continue without music.");
+        
+        // Continue with slideshow even if audio fails
+        startAutoRotation();
+        setIsPlaying(true);
       }
-
-      setIsPlaying(true);
     }
   };
+
+  // Add this to your component to track any runaway intervals or timers
+useEffect(() => {
+  // Store the original setTimeout and setInterval functions
+  const originalSetTimeout = window.setTimeout;
+  const originalSetInterval = window.setInterval;
+  
+  let timeoutCount = 0;
+  let intervalCount = 0;
+  
+  // Override setTimeout to log and count
+  window.setTimeout = function(...args) {
+    timeoutCount++;
+    console.log(`setTimeout #${timeoutCount} called with delay ${args[1]}ms`);
+    return originalSetTimeout.apply(this, args);
+  };
+  
+  // Override setInterval to log and count
+  window.setInterval = function(...args) {
+    intervalCount++;
+    console.log(`setInterval #${intervalCount} called with delay ${args[1]}ms`);
+    return originalSetInterval.apply(this, args);
+  };
+  
+  // Cleanup function to restore original functions
+  return () => {
+    window.setTimeout = originalSetTimeout;
+    window.setInterval = originalSetInterval;
+    console.log(`Final counts: ${timeoutCount} timeouts, ${intervalCount} intervals`);
+  };
+}, []);
 
   // Cleanup on unmount
   useEffect(() => {

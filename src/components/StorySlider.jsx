@@ -47,7 +47,7 @@ import ExportModal from "./ExportModal";
 // import Save Sessions
 import SaveSessionModal from "./SaveSessionModal";
 import SessionsList from "./SessionsList";
-import { saveSession, loadSession } from "./indexedDBService";
+import { saveSession, loadSession, saveBpmValue, getBpmValue } from "./indexedDBService";
 import "./sessionStyles.css";
 // WavformVisualizer
 import WaveformVisualizer from "./WaveformVisualizer";
@@ -292,7 +292,16 @@ const MusicPanel = ({
    */
   const detectBPM = async (audioUrl) => {
     try {
-      console.log("Starting BPM detection...");
+      console.log("Starting BPM detection process for:", audioUrl);
+      
+      // First check if we have a cached BPM value
+      const cachedBpm = await getBpmValue(audioUrl);
+      if (cachedBpm !== null) {
+        console.log(`Using cached BPM: ${cachedBpm}`);
+        return cachedBpm;
+      }
+      
+      console.log("No cached BPM found, analyzing audio...");
       setIsAnalyzing(true);
   
       // Create a separate audio context just for BPM detection
@@ -355,6 +364,10 @@ const MusicPanel = ({
   
       const finalTempo = Math.round(adjustedTempo);
       console.log(`Final detected BPM: ${finalTempo}`);
+      
+      // Save the detected BPM to the cache
+      await saveBpmValue(audioUrl, finalTempo);
+      console.log(`BPM value ${finalTempo} cached for future use`);
   
       return finalTempo;
     } catch (error) {

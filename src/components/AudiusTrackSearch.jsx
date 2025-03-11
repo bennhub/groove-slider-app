@@ -84,30 +84,52 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
 
   // Extract Audius track ID from various URL formats
   const extractAudiusTrackId = (url) => {
-    if (!url) return null;
+    console.group('Extracting Audius Track ID');
+    console.log('Input URL:', url);
+
+    if (!url) {
+        console.warn('URL is null or undefined');
+        console.groupEnd();
+        return null;
+    }
 
     try {
       // Handle embed URLs like https://audius.co/embed/track/YJY1W2p
       if (url.includes("/embed/track/")) {
         const parts = url.split("/embed/track/");
-        return parts[1]?.trim();
+        const trackId = parts[1]?.trim();
+        console.log('Embed URL track ID:', trackId);
+        console.groupEnd();
+        return trackId;
       }
 
       // Handle direct stream URLs
       if (url.includes("/tracks/") && url.includes("/stream")) {
         const match = url.match(/\/tracks\/([a-zA-Z0-9]+)\/stream/);
-        return match && match[1] ? match[1] : null;
+        const trackId = match && match[1] ? match[1] : null;
+        console.log('Stream URL track ID:', trackId);
+        console.groupEnd();
+        return trackId;
       }
 
       // Handle permalink URLs like https://audius.co/artist/track-name
-      // These need to be processed differently, so return the whole URL
       if (url.includes("audius.co/") && !url.includes("/tracks/")) {
-        return "permalink:" + url;
+        console.log('Permalink URL detected');
+        const permalinkUrl = "permalink:" + url;
+        console.groupEnd();
+        return permalinkUrl;
       }
 
+      console.warn('No matching URL pattern found');
+      console.groupEnd();
       return null;
     } catch (error) {
-      console.error("Error extracting Audius track ID:", error);
+      console.error("Detailed error extracting Audius track ID:", {
+        errorMessage: error.message,
+        errorStack: error.stack,
+        inputUrl: url
+      });
+      console.groupEnd();
       return null;
     }
   };

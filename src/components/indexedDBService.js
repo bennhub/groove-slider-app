@@ -7,7 +7,8 @@ const DB_CONFIG = {
   stores: {
     sessions: { keyPath: "id", autoIncrement: true },
     images: { keyPath: "id", autoIncrement: true },
-    music: { keyPath: "id", autoIncrement: true }
+    music: { keyPath: "id", autoIncrement: true },
+    bpmValues: { keyPath: "audioUrl" }
   }
 };
 
@@ -33,50 +34,137 @@ export const cleanupObjectUrls = (urls) => {
  */
 export const initDB = () => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
+    // Increment the version number to force onupgradeneeded
+    const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version + 1);
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       
-      // Create session store
-      if (!db.objectStoreNames.contains('sessions')) {
-        const sessionsStore = db.createObjectStore('sessions', { 
-          keyPath: 'id', 
-          autoIncrement: true 
-        });
-        sessionsStore.createIndex('name', 'name', { unique: false });
-        sessionsStore.createIndex('createdAt', 'createdAt', { unique: false });
-      }
-      
-      // Create images store
-      if (!db.objectStoreNames.contains('images')) {
-        const imagesStore = db.createObjectStore('images', { 
-          keyPath: 'id', 
-          autoIncrement: true 
-        });
-        imagesStore.createIndex('sessionId', 'sessionId', { unique: false });
-      }
-      
-      // Create music store
-      if (!db.objectStoreNames.contains('music')) {
-        const musicStore = db.createObjectStore('music', { 
-          keyPath: 'id', 
-          autoIncrement: true 
-        });
-        musicStore.createIndex('sessionId', 'sessionId', { unique: false });
-      }
+      console.log("Database upgrade in progress. Current version:", event.oldVersion);
+      console.log("Configured stores:", Object.keys(DB_CONFIG.stores));
+
+      // Create each store specified in DB_CONFIG
+      Object.entries(DB_CONFIG.stores).forEach(([storeName, storeConfig]) => {
+        if (!db.objectStoreNames.contains(storeName)) {
+          console.log(`Creating object store: ${storeName}`);
+          
+          const store = db.createObjectStore(storeName, {
+            keyPath: storeConfig.keyPath,
+            autoIncrement: storeConfig.autoIncrement || false
+          });
+
+          // Optional: Add any indexes if needed
+          if (storeName === 'bpmValues') {
+            store.createIndex('audioUrl', 'audioUrl', { unique: true });
+            store.createIndex('timestamp', 'timestamp', { unique: false });
+          }
+
+          console.log(`Object store ${storeName} created successfully`);
+        } else {
+          console.log(`Object store ${storeName} already exists`);
+        }
+      });
     };
 
     request.onsuccess = (event) => {
       const db = event.target.result;
+      console.log("Database opened successfully. Available stores:", db.objectStoreNames);
       resolve(db);
     };
 
     request.onerror = (event) => {
-      console.error("IndexedDB error:", event.target.error);
+      console.error("IndexedDB initialization error:", event.target.error);
       reject(event.target.error);
     };
   });
+};
+
+/**
+ * Save a BPM value to the database
+ * @param {string} audioUrl - URL of the audio file
+ * @param {number} bpm - BPM value to save
+ * @returns {Promise<boolean>} A promise that resolves to true if successful
+ */
+export const saveBpmValue = async (audioUrl, bpm) => {
+  try {
+    const db = await initDB();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('bpmValues', 'readwrite');
+      const store = transaction.objectStore('bpmValues');
+      
+      const request = store.put({
+        audioUrl,
+        bpm,
+        timestamp: new Date().toISOString()
+      });
+      
+      request.onsuccess = () => {
+        console.log(`BPM value ${bpm} saved for ${audioUrl}`);
+        resolve(true);
+      };
+      
+      request.onerror = (event) => {
+        console.error("Error saving BPM value:", event.target.error);
+        reject(false);
+      };
+    });
+  } catch (error) {
+    console.error("saveBpmValue error:", error);
+    return false;
+  }
+};
+
+/**
+ * Get a BPM value from the database
+ * @param {string} audioUrl - URL of the audio file
+ * @returns {Promise<number|null>} A promise that resolves to the BPM value or null if not found
+ */
+export const getBpmValue = async (audioUrl) => {
+  try {
+    const db = await initDB();
+    
+    return new Promise((resolve, reject) => {
+      // Double-check store existence before transaction
+      if (!db.objectStoreNames.contains('bpmValues')) {
+        console.error('bpmValues store does not exist in the database');
+        return resolve(null);
+      }
+
+      try {
+        const transaction = db.transaction(['bpmValues'], 'readonly');
+        const store = transaction.objectStore('bpmValues');
+        const request = store.get(audioUrl);
+        
+        request.onsuccess = (event) => {
+          const result = event.target.result;
+          if (result) {
+            console.log(`Retrieved cached BPM for ${audioUrl}: ${result.bpm}`);
+            resolve(result.bpm);
+          } else {
+            console.log(`No cached BPM found for ${audioUrl}`);
+            resolve(null);
+          }
+        };
+        
+        request.onerror = (event) => {
+          console.error("Error retrieving BPM value:", event.target.error);
+          resolve(null);
+        };
+
+        transaction.onerror = (event) => {
+          console.error("Transaction error:", event.target.error);
+          resolve(null);
+        };
+      } catch (transactionError) {
+        console.error("Transaction creation error:", transactionError);
+        resolve(null);
+      }
+    });
+  } catch (error) {
+    console.error("getBpmValue error:", error);
+    return null;
+  }
 };
 
 /**

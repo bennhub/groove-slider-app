@@ -733,10 +733,10 @@ const WaveformVisualizer = ({
   // Zoom controls with improved behavior
   const handleZoomIn = () => {
     setZoomLevel((prev) => {
-      // Max zoom is 64x
-      if (prev >= 64) return prev;
+      // Max zoom is 128x
+      if (prev >= 128) return prev;
 
-      const newZoom = Math.min(64, prev * 2);
+      const newZoom = Math.min(128, prev * 2);
 
       // When zooming in, preserve the center view
       if (audioBuffer) {
@@ -1189,31 +1189,31 @@ const WaveformVisualizer = ({
                 disabled={zoomLevel <= 1}
                 style={{
                   ...baseButtonStyle, // Shared styles
-                  background: zoomLevel >= 64 ? "#555" : "#222",
+                  background: zoomLevel >= 128 ? "#555" : "#222",
                   color: "white",
                   border: "solid 2px white",
                   borderRadius: "3px",
                   padding: "3px 8px",
                   fontSize: "16px",
                   fontFamily: "Arial, sans-serif",
-                  cursor: zoomLevel >= 64 ? "not-allowed" : "pointer",
+                  cursor: zoomLevel >= 128 ? "not-allowed" : "pointer",
                 }}
               >
                 <Minus />
               </button>
               <button
                 onClick={handleZoomIn}
-                disabled={zoomLevel >= 64}
+                disabled={zoomLevel >= 128}
                 style={{
                   ...baseButtonStyle, // Shared styles
-                  background: zoomLevel >= 64 ? "#555" : "#222",
+                  background: zoomLevel >= 128 ? "#555" : "#222",
                   color: "white",
                   border: "solid 2px white",
                   borderRadius: "3px",
                   padding: "3px 8px",
                   fontSize: "16px",
                   fontFamily: "Arial, sans-serif",
-                  cursor: zoomLevel >= 64 ? "not-allowed" : "pointer",
+                  cursor: zoomLevel >= 128 ? "not-allowed" : "pointer",
                 }}
               >
                 <Plus />

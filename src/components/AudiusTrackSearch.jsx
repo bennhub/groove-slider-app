@@ -146,9 +146,12 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
   const createTrackObject = (id, data) => {
     // If we have the original track object stored, use that
     if (data.originalTrack) {
-      return processTrackStreamUrl(data.originalTrack);
+      return {
+        ...processTrackStreamUrl(data.originalTrack),
+        bpm: data.bpm || null  // Add this line
+      };
     }
-
+  
     // Otherwise create a track object from the stored fields
     const trackObj = {
       id: id,
@@ -162,8 +165,9 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
       permalink: data.streamUrl ? data.streamUrl.split("/").pop() : "",
       streamUrl: data.streamUrl,
       embedUrl: data.embedUrl || null,
+      bpm: data.bpm || null  // Add this line
     };
-
+  
     return processTrackStreamUrl(trackObj);
   };
 
@@ -242,62 +246,38 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
     loadInitialTracks();
   }, []);
 
-  // Handle track selection and connect to waveform player
   const handleTrackSelect = (track) => {
     try {
       // Extract the track ID if possible
       let trackId =
         track.trackId ||
         extractAudiusTrackId(track.embedUrl || track.streamUrl);
-
+  
+      // Common track formatting logic
+      const formatTrack = (streamUrl) => ({
+        id: track.id,
+        title: track.title,
+        artist: track.user?.name || "Unknown Artist",
+        artwork: track.artwork ? track.artwork["480x480"] : null,
+        streamUrl: streamUrl,
+        trackId: trackId || null,
+        bpm: track.bpm || null,
+        genre: track.genre || "Unknown Genre"
+      });
+  
+      // Prioritize proxy URL if track ID exists
       if (trackId) {
-        // Create the direct media URL that works with the audio element
         const proxyUrl = `https://lingering-surf-27dd.benhayze.workers.dev/${trackId}`;
-
-        const formattedTrack = {
-          id: track.id,
-          title: track.title,
-          artist: track.user?.name || "Unknown Artist",
-          artwork: track.artwork ? track.artwork["480x480"] : null,
-          streamUrl: proxyUrl,
-          trackId: trackId,
-        };
-
-        // Pass the track to the parent component
-        onTrackSelect(formattedTrack);
+        onTrackSelect(formatTrack(proxyUrl));
         return;
       }
-
-      // Fallback to original URL if we can't extract ID
+  
+      // Fallback to stream URL
       if (track.streamUrl) {
-        const formattedTrack = {
-          id: track.id,
-          title: track.title,
-          artist: track.user?.name || "Unknown Artist",
-          artwork: track.artwork ? track.artwork["480x480"] : null,
-          streamUrl: track.streamUrl,
-        };
-
-        onTrackSelect(formattedTrack);
+        onTrackSelect(formatTrack(track.streamUrl));
         return;
       }
-
-      // If we don't have a direct stream URL or couldn't extract a track ID,
-      // use the original stream URL as a fallback
-      if (track.streamUrl) {
-        const formattedTrack = {
-          id: track.id,
-          title: track.title,
-          artist: track.user?.name || "Unknown Artist",
-          artwork: track.artwork ? track.artwork["480x480"] : null,
-          streamUrl: track.streamUrl,
-        };
-
-        // Pass the track to the parent component
-        onTrackSelect(formattedTrack);
-        return;
-      }
-
+  
       // If we reach here, we don't have a valid URL
       throw new Error("Track doesn't have a playable URL");
     } catch (error) {
@@ -307,7 +287,6 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
       );
     }
   };
-
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       searchTracks();
@@ -394,74 +373,61 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
         }}
       >
         {tracks.map((track) => (
-          <div
-            key={track.id}
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              overflow: "hidden",
-              backgroundColor: "white",
-              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-              transition: "transform 0.2s",
-              cursor: "pointer",
-            }}
-            onClick={() => handleTrackSelect(track)}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.transform = "scale(1.05)")
-            }
-            onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
-          >
-            <img
-              src={track.artwork ? track.artwork["480x480"] : "placeholder.jpg"}
-              alt={track.title}
-              style={{ width: "100%", height: "200px", objectFit: "cover" }}
-            />
-            <div
-              style={{
-                padding: "10px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                height: "120px",
-              }}
-            >
-              <div>
-                <h3
-                  style={{
-                    margin: "0 0 5px 0",
-                    fontSize: "16px",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {track.title}
-                </h3>
-                <p
-                  style={{
-                    margin: "0 0 5px 0",
-                    color: "#676",
-                    fontSize: "14px",
-                  }}
-                >
-                  By {track.user?.name || "Unknown Artist"}
-                </p>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <p style={{ margin: 0, color: "#888", fontSize: "12px" }}>
-                  Genre: {track.genre || "Unknown"}
-                </p>
-                <PlayCircle size={24} color="#1DB954" />
-              </div>
-            </div>
-          </div>
-        ))}
+  <div
+    key={track.id}
+    style={{
+      border: "1px solid #ddd",
+      borderRadius: "8px",
+      padding: "10px",
+      backgroundColor: "white",
+      boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+      transition: "transform 0.2s",
+      cursor: "pointer",
+    }}
+    onClick={() => handleTrackSelect(track)}
+    onMouseOver={(e) =>
+      (e.currentTarget.style.transform = "scale(1.05)")
+    }
+    onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
+  >
+    <div>
+      <h3
+        style={{
+          margin: "0 0 5px 0",
+          fontSize: "16px",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {track.title}
+      </h3>
+      <p
+        style={{
+          margin: "0 0 5px 0",
+          color: "#676",
+          fontSize: "14px",
+        }}
+      >
+        By {track.user?.name || "Unknown Artist"}
+      </p>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginTop: "10px",
+        }}
+      >
+        <div style={{ fontSize: "12px", color: "#888" }}>
+          <span>BPM: {track.bpm || "N/A"}</span>
+          <span style={{ marginLeft: "10px" }}>Genre: {track.genre || "Unknown"}</span>
+        </div>
+        <PlayCircle size={24} color="#1DB954" />
+      </div>
+    </div>
+  </div>
+))}
       </div>
     </div>
   );

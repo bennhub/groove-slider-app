@@ -8,10 +8,13 @@ import {
   ChevronDown,
   ChevronUp,
   PlusCircle,
+  CornerDownRight,
+  ArrowBigRight,
   X,
   Save,
   Loader,
   ImagePlus,
+  Images,
   Clock,
   Play,
   Pause,
@@ -2779,15 +2782,16 @@ const StorySlider = () => {
               <div className="title-bar">
                 <h1 className="slider-title">Groove Slider</h1>
                 <div className="photo-counter">
-                  <span className={stories.length >= 25 ? "max-reached" : ""}>
-                    {stories.length} / 25 photos
-                  </span>
+                <span className={stories.length >= 25 ? "max-reached" : ""}>
+    {/* Add the image icon with desired size */}
+    {stories.length} / 25  <Images size={25} />
+  </span>
                 </div>
                 <button
                   onClick={() => setShowLanding(true)}
                   className="projects-button"
                 >
-                  back
+                  <ArrowBigRight size={28} />
                 </button>
               </div>
               <audio ref={audioRef} src={musicUrl} loop={true} />

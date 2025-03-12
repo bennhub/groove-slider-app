@@ -786,6 +786,31 @@ img {
   color: var(--color-primary-dark);
 }
 
+.photo-counter {
+  display: flex;
+  justify-content: center;
+  align-items: left;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #eef4bb;
+  margin-top: -20px;
+}
+
+.photo-counter span {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.photo-counter .photo-icon {
+  margin-left: 8px; /* Add some space between the text and icon */
+  vertical-align: middle; /* Align the icon with the text */
+}
+
+.photo-counter .max-reached {
+  color: #ff0000; /* Red color when the max limit is reached */
+  font-weight: bold;
+}
 
 .add-more-button {
   position: absolute;
@@ -1098,8 +1123,8 @@ img {
 /* When active, change the icon color too */
 /* Base styling for icons */
 .bottom-menu-icon {
-  width: 23px;
-  height: 23px;
+  width: 33px;
+  height: 33px;
   color: var(--color-accent);
   margin-bottom: 4px;
   background: rgba(2, 8, 2, 0.351);
@@ -2297,7 +2322,7 @@ img {
   background-color: transparent;
   color: var(--color-accent);
   border: solid 2px var(--color-accent);
-  border-radius: 20px;
+  border-radius: 8px;
   margin-top: -15px;
   padding: 4px 8px;
   font-weight: bold;
@@ -2555,6 +2580,9 @@ img {
     width: 22px;
     height: 22px;
   }
+  .photo-counter {
+    font-size: 0.875rem; /* Slightly smaller font for smaller screens */
+  }
   /* Larger inputs for better touch control */
   .bpm-input {
     width: 100px;
@@ -2600,6 +2628,9 @@ img {
     max-height: calc(100vh - 120px); /* Account for header/footer */
   }
 }
+.photo-counter {
+  font-size: 1rem; /* Regular font size for tablets */
+}
 /* Desktop Styles - 1024px and above */
 @media screen and (min-width: 1024px) {
   .music-panel-inner,
@@ -2631,6 +2662,10 @@ img {
     width: calc(100% - 2rem);
     max-width: calc(100% - 2rem);
     padding: var(--spacing-xl) var(--spacing-xxl);
+  }
+
+  .photo-counter {
+    font-size: 1.125rem; /* Larger font size for desktops */
   }
   .edit-panel,
   .music-panel,

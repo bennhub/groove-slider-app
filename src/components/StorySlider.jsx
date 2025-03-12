@@ -469,58 +469,94 @@ const MusicPanel = ({
     }
   }, [audioRef, controlsRef, isPlaying]);
 
-  /**
-   * Fixed play/pause handler that prevents the timing jump
-   */
-  /**
-   * Fixed play/pause handler that prevents the timing jump
-   */
-  // Simplified handlePlayPause function
-  const handlePlayPause = async () => {
+
+// Updated handlePlayPause function with fixes for no-music scenario
+// Completely reworked handlePlayPause to fix the no-music issue
+// Completely simplified handlePlayPause function
+const handlePlayPause = () => {
+  // If currently playing, stop everything
+  if (isPlaying) {
+    console.log("Stopping playback");
+    
+    // Explicitly clear the interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
+    // Stop audio if it exists
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+      } catch (e) {
+        console.error("Error pausing audio:", e);
+      }
+    }
+    
+    // Update state last
+    setIsPlaying(false);
+    return;
+  }
+  
+  // Starting playback - reset to first slide if at the end
+  if (currentIndex === stories.length - 1) {
+    setCurrentIndex(0);
+  }
+  
+  console.log("Starting playback");
+  
+  // Start audio only if we have music
+  if (musicUrl) {
     try {
-      if (isPlaying) {
-        // Simply stop everything
-        console.log("Pausing playback");
-        stopAutoRotation();
+      // Create a new audio element each time
+      const audio = new Audio(musicUrl);
+      audio.currentTime = musicStartPoint;
+      audioRef.current = audio;
+      
+      // Don't await this - it might fail and we don't want to block
+      audio.play().catch(err => {
+        console.error("Audio playback failed:", err);
+        console.log("Continuing with slideshow without audio");
+      });
+    } catch (e) {
+      console.error("Error setting up audio:", e);
+      // Continue anyway
+    }
+  } else {
+    console.log("No music URL, running slideshow without audio");
+  }
+  
+  // Set up interval for slideshow
+  const intervalTime = duration * 1000;
+  console.log(`Setting up interval with duration: ${intervalTime}ms`);
+  
+  // Clear any existing interval first
+  if (intervalRef.current) {
+    clearInterval(intervalRef.current);
+  }
+  
+  // Start a new interval
+  intervalRef.current = setInterval(() => {
+    setCurrentIndex(prev => {
+      if (!isLoopingEnabled && prev >= stories.length - 1) {
+        // At the end and not looping
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
         if (audioRef.current) {
           audioRef.current.pause();
         }
         setIsPlaying(false);
-      } else {
-        console.log("Starting playback");
-
-        // Reset to first slide if we're at the end
-        if (currentIndex === stories.length - 1) {
-          setCurrentIndex(0);
-        }
-
-        // Create a fresh audio element to avoid stale state
-        const freshAudio = new Audio(musicUrl);
-
-        // Set the start time
-        freshAudio.currentTime = musicStartPoint;
-
-        // Store the fresh audio element
-        audioRef.current = freshAudio;
-
-        try {
-          // Start audio playback
-          await freshAudio.play();
-          console.log("Audio playback started");
-
-          // Start the slideshow
-          startAutoRotation();
-
-          setIsPlaying(true);
-        } catch (playError) {
-          console.error("Failed to play audio:", playError);
-          alert("Unable to play audio. Please try again.");
-        }
+        return prev;
       }
-    } catch (error) {
-      console.error("Error in handlePlayPause:", error);
-    }
-  };
+      return (prev + 1) % stories.length;
+    });
+  }, intervalTime);
+  
+  // Update the playing state
+  setIsPlaying(true);
+};
 
   /**
    * Format time with millisecond precision
@@ -1978,53 +2014,72 @@ const StorySlider = () => {
   }, []);
 
   // Handle file uploads
-  const handleFileUpload = async (event) => {
-    const files = Array.from(event.target.files).filter((file) =>
-      file.type.startsWith("image/")
-    );
+// Handle file uploads with 25 photo limit
+const handleFileUpload = async (event) => {
+  const files = Array.from(event.target.files).filter((file) =>
+    file.type.startsWith("image/")
+  );
 
-    if (files.length === 0) {
-      alert("Please select image files only.");
-      return;
+  if (files.length === 0) {
+    alert("Please select image files only.");
+    return;
+  }
+
+  // Check if adding these files would exceed the 25 photo limit
+  const currentPhotoCount = stories.length;
+  const remainingSlots = 25 - currentPhotoCount;
+
+  if (remainingSlots <= 0) {
+    // No slots left, show error message
+    alert("Maximum limit of 25 photos reached. Please remove some photos before adding more.");
+    return;
+  }
+
+  if (files.length > remainingSlots) {
+    // Too many files selected, only process up to the limit
+    alert(`Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`);
+    // Slice the files array to only include up to the remaining slots
+    files.slice(0, remainingSlots);
+  }
+
+  // Process files one by one with base64 data (up to the limit)
+  const filesToProcess = files.slice(0, remainingSlots);
+  const newStories = await Promise.all(
+    filesToProcess.map(async (file) => {
+      // Read file as base64 data
+      const base64Data = await readFileAsBase64(file);
+
+      return {
+        type: "image",
+        url: URL.createObjectURL(file),
+        originalName: file.name,
+        base64Data: base64Data,
+        dateAdded: new Date().toISOString(), // Add timestamp for tracking
+      };
+    })
+  );
+
+  // Update state with new stories
+  const updatedStories = [...stories, ...newStories];
+  setStories(updatedStories);
+
+  // Clear the file input
+  event.target.value = "";
+
+  // Silent auto-save after adding images
+  if (newStories.length > 0) {
+    try {
+      // Call your existing save function but with silent flag and make the name clearly an auto-save
+      await handleSaveSessionToDb("auto_save_" + Date.now(), true);
+
+      console.log(
+        `Auto-save completed with ${updatedStories.length} total images`
+      );
+    } catch (error) {
+      console.error("Auto-save failed:", error);
     }
-
-    // Process files one by one with base64 data
-    const newStories = await Promise.all(
-      files.map(async (file) => {
-        // Read file as base64 data
-        const base64Data = await readFileAsBase64(file);
-
-        return {
-          type: "image",
-          url: URL.createObjectURL(file),
-          originalName: file.name,
-          base64Data: base64Data,
-          dateAdded: new Date().toISOString(), // Add timestamp for tracking
-        };
-      })
-    );
-
-    // Update state with new stories
-    const updatedStories = [...stories, ...newStories];
-    setStories(updatedStories);
-
-    // Clear the file input
-    event.target.value = "";
-
-    // Silent auto-save after adding images
-    if (newStories.length > 0) {
-      try {
-        // Call your existing save function but with silent flag and make the name clearly an auto-save
-        await handleSaveSessionToDb("auto_save_" + Date.now(), true);
-
-        console.log(
-          `Auto-save completed with ${updatedStories.length} total images`
-        );
-      } catch (error) {
-        console.error("Auto-save failed:", error);
-      }
-    }
-  };
+  }
+};
 
   // Helper to read file as base64
   const readFileAsBase64 = (file) => {
@@ -2070,27 +2125,44 @@ const StorySlider = () => {
   };
   // Playback control
   const startAutoRotation = () => {
+    // Clear any existing interval first to prevent multiple timers
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current);
+      console.log("Cleared existing interval before starting new one");
+    }
+    
+    console.log("Starting auto rotation with duration:", duration * 1000, "ms");
+    
     intervalRef.current = setInterval(() => {
       setCurrentIndex((prevIndex) => {
         // If we're not looping and at the last slide
         if (!isLoopingEnabled && prevIndex >= stories.length - 1) {
-          stopAutoRotation();
-          setIsPlaying(false);
-          // Stop music if it's playing
+          stopAutoRotation(); // Stop rotation
           if (audioRef.current) {
-            audioRef.current.pause();
+            audioRef.current.pause(); // Stop music
           }
-          return prevIndex;
+          return prevIndex; // Keep at last slide
         }
         return (prevIndex + 1) % stories.length;
       });
     }, duration * 1000);
   };
+  
   const stopAutoRotation = () => {
-    if (intervalRef.current) {
+    console.log("Stopping auto rotation, current interval ref:", intervalRef.current);
+    
+    if (intervalRef.current !== null) {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      console.log("Interval cleared successfully");
+    } else {
+      console.warn("No interval to clear - this might indicate a syncing issue");
     }
+    
+    // Force isPlaying to false as a safety measure
+    setIsPlaying(false);
   };
+  
 
   const handlePlayPause = async () => {
     if (isPlaying) {
@@ -2696,6 +2768,11 @@ const StorySlider = () => {
             <div className="slider-container">
               <div className="title-bar">
                 <h1 className="slider-title">Groove Slider</h1>
+                <div className="photo-counter">
+    <span className={stories.length >= 25 ? "max-reached" : ""}>
+      {stories.length} / 25 photos
+    </span>
+  </div>
                 <button
                   onClick={() => setShowLanding(true)}
                   className="projects-button"

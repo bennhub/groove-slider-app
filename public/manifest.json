@@ -1,7 +1,7 @@
 {
   "id": "groove-gallery-app",
   "name": "Groove Gallery",
-  "short_name": "Groove Gallery",
+  "short_name": "Groove Slider",
   "description": "Create dynamic image slideshows synced to music",
   "start_url": "/groove-slider-img/",
   "display": "standalone",

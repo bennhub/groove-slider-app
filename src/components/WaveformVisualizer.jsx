@@ -1052,7 +1052,7 @@ const WaveformVisualizer = ({
         <div className="waveform-loading">
           {loadingStage === 'initial' && 'Loading...'}
           {loadingStage === 'cached' && 'Loading from cache...'}
-          {loadingStage === 'streaming' && 'Streaming...'}
+          {loadingStage === 'streaming' && 'Please Wait, Analyzing...'}
           {loadingStage === 'basic-waveform' && 'Generating preview...'}
         </div>
       ) : (

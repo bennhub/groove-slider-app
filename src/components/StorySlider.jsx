@@ -758,118 +758,70 @@ const MusicPanel = ({
             />
           </label>*/}
           {/* New Audius Tracks Button */}
-          <button
-            onClick={() => setIsAudiusModalOpen(true)}
-            style={{
-              background: "#6c0d9c",
-              color: "white",
-              border: "solid 2px #fbf8cd",
-              padding: "10px",
-              borderRadius: "5px",
-              display: "flex",
-              alignItems: "center",
-              textAlign: "left",
-              gap: "10px",
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-12.5v9l6-4.5z" />
-            </svg>
-            Find Music
-          </button>
+<button
+  onClick={() => setIsAudiusModalOpen(true)}
+  style={{
+    background: "#6c0d9c",
+    color: "white",
+    border: "solid 2px #fbf8cd",
+    padding: "10px",
+    borderRadius: "5px",
+    display: "flex",
+    alignItems: "center",
+    textAlign: "left",
+    gap: "10px",
+  }}
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-12.5v9l6-4.5z" />
+  </svg>
+  Find Music
+</button>
 
-          {/* Audius Tracks Modal */}
-          {isAudiusModalOpen && (
-            <div
-              style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                backgroundColor: "rgba(0,0,0,0.7)",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                zIndex: 1000,
-              }}
-              onClick={() => setIsAudiusModalOpen(false)}
-            >
-              <div
-                style={{
-                  background: "white",
-                  padding: "20px",
-                  borderRadius: "10px",
-                  width: "90%",
-                  maxWidth: "800px",
-                  maxHeight: "80%",
-                  overflowY: "auto",
-                  position: "relative",
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => setIsAudiusModalOpen(false)}
-                  style={{
-                    position: "absolute",
-                    top: "10px",
-                    right: "10px",
-                    background: "red",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "50%",
-                    width: "30px",
-                    height: "30px",
-                    cursor: "pointer",
-                  }}
-                >
-                  X
-                </button>
-                <AudiusTrackSearch
-                  onTrackSelect={(track) => {
-                    try {
-                      // The track object should have a streamUrl property
-                      if (!track.streamUrl) {
-                        throw new Error("Track doesn't have a streamUrl");
-                      }
+{/* Audius Tracks Modal - Simplified */}
+{isAudiusModalOpen && (
+  <AudiusTrackSearch 
+    onTrackSelect={(track) => {
+      try {
+        // The track object should have a streamUrl property
+        if (!track.streamUrl) {
+          throw new Error("Track doesn't have a streamUrl");
+        }
 
-                      // Set the music URL
-                      onUpload(track.streamUrl);
+        // Set the music URL
+        onUpload(track.streamUrl);
 
-                      // Use the BPM from the track if available, otherwise default to 120
-                      const trackBPM = track.bpm || 120;
-                      console.log(`Using track BPM: ${trackBPM}`);
-                      onBPMChange(trackBPM);
+        // Use the BPM from the track if available, otherwise default to 120
+        const trackBPM = track.bpm || 120;
+        console.log(`Using track BPM: ${trackBPM}`);
+        onBPMChange(trackBPM);
 
-                      // Reset start point to beginning
-                      onStartPointChange(0);
+        // Reset start point to beginning
+        onStartPointChange(0);
 
-                      // Reset audio state
-                      if (controlsRef.current) {
-                        controlsRef.current.src = track.streamUrl;
-                        controlsRef.current.currentTime = 0;
-                      }
+        // Reset audio state
+        if (controlsRef.current) {
+          controlsRef.current.src = track.streamUrl;
+          controlsRef.current.currentTime = 0;
+        }
 
-                      // Close the modal
-                      setIsAudiusModalOpen(false);
-                    } catch (error) {
-                      console.error("Error selecting Audius track:", error);
-                      alert(
-                        "Unable to play this track. Please try another one."
-                      );
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        // Close the modal
+        setIsAudiusModalOpen(false);
+      } catch (error) {
+        console.error("Error selecting Audius track:", error);
+        alert("Unable to play this track. Please try another one.");
+      }
+    }}
+    onClose={() => setIsAudiusModalOpen(false)}
+  />
+)}
+</div>
 
         <div className="music-player">
           <audio

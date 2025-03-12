@@ -1123,12 +1123,12 @@ img {
 /* When active, change the icon color too */
 /* Base styling for icons */
 .bottom-menu-icon {
-  width: 33px;
-  height: 33px;
+  width: 28px;
+  height: 28px;
   color: var(--color-accent);
   margin-bottom: 4px;
-  background: rgba(2, 8, 2, 0.351);
-  padding: 8px; /* This expands the background */
+  background: rgba(54, 52, 52, 0.364);
+  padding: 0px; /* This expands the background */
   border-radius: 50%; /* Optional, to make the background circular */
   display: inline-flex;
   justify-content: center;
@@ -1136,9 +1136,9 @@ img {
   box-sizing: content-box; /* Ensures padding doesn't affect icon size */
 }
 .bottom-menu-text {
-  font-size: 14px;
-  background: rgba(2, 8, 2, 0.351);
-  padding: 2px;
+  font-size: 13px;
+  background: rgba(25, 26, 25, 0.251);
+  padding: 0px;
   border-radius: 2px;
   -webkit-user-select: none;  /* Safari */
   -moz-user-select: none;     /* Firefox */
@@ -2698,8 +2698,8 @@ img {
   }
   /* Enhanced bottom menu buttons */
   .bottom-menu-icon {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
   }
   .bottom-menu-text {
     font-size: 18px;

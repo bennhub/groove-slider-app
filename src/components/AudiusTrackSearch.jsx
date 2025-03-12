@@ -308,13 +308,16 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
         borderRadius: '10px', // Existing border radius
         boxShadow: '0 4px 6px rgba(0,0,0,0.2)', // Add shadow for depth
         padding: '20px',
+        overflowY: 'auto',
+        scrollbarWidth: 'none', // Hide scrollbar in Firefox
+        msOverflowStyle: 'none', // Hide scrollbar in IE/Edge
       }}
     >
       <div
         style={{
           display: "flex",
           marginBottom: "20px",
-          boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+          boxShadow: "0 4px 6px rgb(230, 230, 230)",
           borderRadius: "5px",
           overflow: "hidden",
         }}
@@ -338,7 +341,7 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
           disabled={isLoading}
           style={{
             padding: "10px 20px",
-            backgroundColor: isLoading ? "#cccccc" : "#1DB954",
+            backgroundColor: isLoading ? "#cccccc" : "#6c0d9c",
             color: "white",
             border: "none",
             display: "flex",
@@ -359,7 +362,7 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
       )}
 
       {tracks.length === 0 && !isLoading && !error && (
-        <div style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+        <div style={{ textAlign: "center", padding: "20px", color: "#888" }}>
           No tracks available. Please add tracks to your Firestore database
           first.
         </div>
@@ -370,6 +373,7 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
           gap: "15px",
+      
         }}
       >
         {tracks.map((track) => (
@@ -419,11 +423,11 @@ const AudiusTrackSearch = ({ onTrackSelect }) => {
           marginTop: "10px",
         }}
       >
-        <div style={{ fontSize: "12px", color: "#888" }}>
+        <div style={{ fontSize: "14px", color: "#888" }}>
           <span>BPM: {track.bpm || "N/A"}</span>
           <span style={{ marginLeft: "10px" }}>Genre: {track.genre || "Unknown"}</span>
         </div>
-        <PlayCircle size={24} color="#1DB954" />
+        <PlayCircle size={34} color="#" />
       </div>
     </div>
   </div>

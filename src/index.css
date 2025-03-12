@@ -748,32 +748,44 @@ img {
   align-items: center;
   justify-content: center;
 }
+
 .upload-button {
   display: flex;
-  padding: var(--spacing-sm) var(--spacing-lg);
   align-items: center;
-  gap: var(--spacing-md);
-  background: #ffffffb4;
-  border-radius: var(--border-radius-sm);
+  justify-content: center;
+  gap: 8px; /* Adjust space between icon and text */
+  padding: 12px 20px;
+  background: #fff2e2;
+  border-radius: var(--border-radius-md);
   cursor: pointer;
   color: var(--color-text-primary);
   font-family: var(--font-family-primary);
-  border: 2px dashed var(--color-background-primary);
-  transition: all var(--transition-standard);
-  margin-left: auto; /* This pushes it to the right */
-  height: 70px;
-  width: 400px;
+  border: 3px dashed #000;
+  transition: all 0.3s ease-in-out;
+  height: 60px;
+  width: 37%;
+  text-align: center;
 }
 
-/* Upload button hover effect */
-.upload-button:hover {
-  background: var(--color-accent);
-  border-color: #999;
+.upload-button:hover,
+.upload-button:focus {
+  background: #e0e0e0;
+  border-color: #888;
 }
+
 .upload-button span {
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  white-space: nowrap; /* Prevents text from wrapping */
+}
+
+.upload-icon {
+  width: 18px; /* Smaller icon */
+  height: 18px;
   color: var(--color-primary-dark);
 }
+
 
 .add-more-button {
   position: absolute;

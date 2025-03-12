@@ -206,6 +206,7 @@ const WaveformVisualizer = ({
   const [waveformOffset, setWaveformOffset] = useState(0);
   const [followPlayhead, setFollowPlayhead] = useState(false);
   const [sliderDragging, setSliderDragging] = useState(false);
+  const [loadingStage, setLoadingStage] = useState('initial');
 
   // Refs for tracking
   const loadedAudioUrlRef = useRef(null);
@@ -224,69 +225,98 @@ const WaveformVisualizer = ({
   // Load audio data and retrieve positions from IndexedDB
   useEffect(() => {
     if (!audioUrl || loadedAudioUrlRef.current === audioUrl) return;
-
+  
     loadedAudioUrlRef.current = audioUrl;
     setIsLoading(true);
-
-    const loadAudioAndPositions = async () => {
-      try {
-        // First check if we have cached visualizer state and audio buffer
-        const [cachedState, cachedBuffer] = await Promise.all([
-          getVisualizerState(audioUrl),
-          getStoredAudioBuffer(audioUrl),
-        ]);
-
-        // Initialize audio context
-        const audioContext = new (window.AudioContext ||
-          window.webkitAudioContext)();
-
-        let buffer;
-        if (cachedBuffer) {
-          // Use cached buffer if available
-          buffer = cachedBuffer.buffer;
-          console.log("Using cached audio buffer");
-        } else {
-          // Fetch and decode audio file if no cached buffer
-          const response = await fetch(audioUrl);
-          const arrayBuffer = await response.arrayBuffer();
-          buffer = await audioContext.decodeAudioData(arrayBuffer);
-
-          // Store the decoded buffer for future use
-          await storeAudioBuffer(audioUrl, buffer);
-        }
-
-        setAudioBuffer(buffer);
-        setDuration(buffer.duration);
-
+  
+    const loadAudioProgressively = async () => {
+      setLoadingStage('initial');
+      
+      // First, try cached buffer
+      const cachedBuffer = await getStoredAudioBuffer(audioUrl);
+      if (cachedBuffer) {
+        setLoadingStage('cached');
+        setAudioBuffer(cachedBuffer.buffer);
+        setDuration(cachedBuffer.buffer.duration);
+        
         // Restore cached state if available
+        const cachedState = await getVisualizerState(audioUrl);
         if (cachedState) {
-          // Restore zoom level and waveform offset
           if (cachedState.zoomLevel) {
             setZoomLevel(cachedState.zoomLevel);
           }
           if (cachedState.waveformOffset !== undefined) {
             setWaveformOffset(cachedState.waveformOffset);
           }
-          // Removed followPlayhead restoration as we discussed earlier
-
-          // Restore start point if different
-          if (
-            onStartPointChange &&
-            cachedState.startPoint !== undefined &&
-            Math.abs(cachedState.startPoint - musicStartPoint) > 0.001
-          ) {
+          if (onStartPointChange &&
+              cachedState.startPoint !== undefined &&
+              Math.abs(cachedState.startPoint - musicStartPoint) > 0.001) {
             onStartPointChange(cachedState.startPoint);
           }
         }
-
+  
         setIsLoading(false);
+        return;
+      }
+  
+      // Start streaming  
+      setLoadingStage('streaming');
+  
+      try {
+        let response;
+        let arrayBuffer;
+  
+        // For Audius streaming, use a more efficient strategy
+        if (audioUrl.includes('audius.co/')) {
+          const trackId = extractTrackIdFromUrl(audioUrl);
+          const streamUrl = `https://lingering-surf-27dd.benhayze.workers.dev/${trackId}`;
+  
+          response = await fetch(streamUrl, {
+            headers: {
+              'Accept': 'audio/mpeg',
+              'Range': 'bytes=0-500000' // First 500KB
+            }
+          });
+  
+          arrayBuffer = await response.arrayBuffer();
+          // Process with minimal computational overhead
+        } else {  
+          response = await fetch(audioUrl, {
+            headers: { 'Range': 'bytes=0-100000' } // Fetch first 100KB
+          });
+  
+          arrayBuffer = await response.arrayBuffer();
+        }
+        
+        // Do initial waveform generation with partial data
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const partialBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        setAudioBuffer(partialBuffer);
+        setDuration(partialBuffer.duration);
+        setLoadingStage('basic-waveform');
+        setIsLoading(false);
+  
+        // Continue full load in background
+        const fullResponse = await fetch(audioUrl);  
+        const fullArrayBuffer = await fullResponse.arrayBuffer();
+        const fullBuffer = await audioContext.decodeAudioData(fullArrayBuffer);
+  
+        setAudioBuffer(fullBuffer);
+        setDuration(fullBuffer.duration);
+        setLoadingStage('complete');
+        
+        // Store the decoded buffer for future use
+        await storeAudioBuffer(audioUrl, fullBuffer);
+  
       } catch (error) {
-        console.error("Error loading audio:", error);
+        console.error("Loading failed:", error);
+        setLoadingStage('error'); 
         setIsLoading(false);
       }
     };
-
-    loadAudioAndPositions();
+  
+    loadAudioProgressively();
   }, [audioUrl, onStartPointChange, musicStartPoint]);
 
   // Add this function just before the return statement
@@ -470,14 +500,47 @@ const WaveformVisualizer = ({
   // Draw waveform - use useCallback to prevent excessive redraws
   const drawWaveform = useCallback(() => {
     if (!audioBuffer || !canvasRef.current) return;
-
+  
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const width = canvas.width;
     const height = canvas.height;
-
+  
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
+  
+    // Low-resolution initial render
+    if (isLoading) {
+      // Background with subtle gradient
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, "#1a1a2a");
+      gradient.addColorStop(1, "#1a1a1a");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+  
+      // Low-resolution waveform placeholder with more dynamic rendering
+      ctx.fillStyle = "rgba(255, 236, 180, 0.15)"; // Softer, more translucent
+      
+      // Animate the wave for a more engaging loading state
+      const animationTime = Date.now() * 0.005; // Control animation speed
+      
+      for (let i = 0; i < width; i += 5) {
+        // More complex wave generation
+        const randomHeight = 
+          Math.sin(i * 0.1 + animationTime) * (height / 3) + 
+          Math.cos(i * 0.05 - animationTime) * (height / 4) + 
+          Math.random() * (height / 5);
+        
+        ctx.fillRect(
+          i, 
+          height/2 - randomHeight/2, 
+          3, 
+          Math.abs(randomHeight)
+        );
+      }
+  
+      return; // Stop here for loading state
+    }
 
     // Draw background
     ctx.fillStyle = "#000";
@@ -612,15 +675,30 @@ const WaveformVisualizer = ({
     duration,
     musicStartPoint,
     canvasWidth,
+    isLoading,
   ]);
+
 
   // Effect to trigger waveform drawing
   useEffect(() => {
-    // Use requestAnimationFrame for smoother rendering
-    if (audioBuffer && !isLoading) {
-      const animationId = requestAnimationFrame(drawWaveform);
-      return () => cancelAnimationFrame(animationId);
+    let animationId;
+    
+    // Use requestAnimationFrame for smoother loading animation
+    if (isLoading) {
+      const animate = () => {
+        drawWaveform();
+        animationId = requestAnimationFrame(animate);
+      };
+      animate();
+    } else if (audioBuffer && !isLoading) {
+      animationId = requestAnimationFrame(drawWaveform);
     }
+  
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
   }, [
     audioBuffer,
     currentPlaybackTime,
@@ -698,10 +776,10 @@ const WaveformVisualizer = ({
   // Zoom controls with improved behavior
   const handleZoomIn = () => {
     setZoomLevel((prev) => {
-      // Max zoom is 64x
-      if (prev >= 64) return prev;
+      // Max zoom is 128x
+      if (prev >= 128) return prev;
 
-      const newZoom = Math.min(64, prev * 2);
+      const newZoom = Math.min(128, prev * 2);
 
       // When zooming in, preserve the center view
       if (audioBuffer) {
@@ -970,8 +1048,13 @@ const WaveformVisualizer = ({
 
   return (
     <div className="waveform-container" ref={containerRef}>
-      {isLoading ? (
-        <div className="waveform-loading">Loading waveform...</div>
+        {isLoading ? (
+        <div className="waveform-loading">
+          {loadingStage === 'initial' && 'Loading...'}
+          {loadingStage === 'cached' && 'Loading from cache...'}
+          {loadingStage === 'streaming' && 'Streaming...'}
+          {loadingStage === 'basic-waveform' && 'Generating preview...'}
+        </div>
       ) : (
         <>
           <div
@@ -1154,31 +1237,31 @@ const WaveformVisualizer = ({
                 disabled={zoomLevel <= 1}
                 style={{
                   ...baseButtonStyle, // Shared styles
-                  background: zoomLevel >= 64 ? "#555" : "#222",
+                  background: zoomLevel >= 128 ? "#555" : "#222",
                   color: "white",
                   border: "solid 2px white",
                   borderRadius: "3px",
                   padding: "3px 8px",
                   fontSize: "16px",
                   fontFamily: "Arial, sans-serif",
-                  cursor: zoomLevel >= 64 ? "not-allowed" : "pointer",
+                  cursor: zoomLevel >= 128 ? "not-allowed" : "pointer",
                 }}
               >
                 <Minus />
               </button>
               <button
                 onClick={handleZoomIn}
-                disabled={zoomLevel >= 64}
+                disabled={zoomLevel >= 128}
                 style={{
                   ...baseButtonStyle, // Shared styles
-                  background: zoomLevel >= 64 ? "#555" : "#222",
+                  background: zoomLevel >= 128 ? "#555" : "#222",
                   color: "white",
                   border: "solid 2px white",
                   borderRadius: "3px",
                   padding: "3px 8px",
                   fontSize: "16px",
                   fontFamily: "Arial, sans-serif",
-                  cursor: zoomLevel >= 64 ? "not-allowed" : "pointer",
+                  cursor: zoomLevel >= 128 ? "not-allowed" : "pointer",
                 }}
               >
                 <Plus />

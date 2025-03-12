@@ -748,31 +748,68 @@ img {
   align-items: center;
   justify-content: center;
 }
+
 .upload-button {
   display: flex;
-  padding: var(--spacing-sm) var(--spacing-lg);
   align-items: center;
-  gap: var(--spacing-md);
-  background: #ffffffb4;
-  border-radius: var(--border-radius-sm);
+  justify-content: center;
+  gap: 8px; /* Adjust space between icon and text */
+  padding: 12px 20px;
+  background: #fff2e2;
+  border-radius: var(--border-radius-md);
   cursor: pointer;
   color: var(--color-text-primary);
   font-family: var(--font-family-primary);
-  border: 2px dashed var(--color-background-primary);
-  transition: all var(--transition-standard);
-  margin-left: auto; /* This pushes it to the right */
-  height: 70px;
-  width: 400px;
+  border: 3px dashed #000;
+  transition: all 0.3s ease-in-out;
+  height: 60px;
+  width: 37%;
+  text-align: center;
 }
 
-/* Upload button hover effect */
-.upload-button:hover {
-  background: var(--color-accent);
-  border-color: #999;
+.upload-button:hover,
+.upload-button:focus {
+  background: #e0e0e0;
+  border-color: #888;
 }
+
 .upload-button span {
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--color-primary-dark);
+  white-space: nowrap; /* Prevents text from wrapping */
+}
+
+.upload-icon {
+  width: 18px; /* Smaller icon */
+  height: 18px;
+  color: var(--color-primary-dark);
+}
+
+.photo-counter {
+  display: flex;
+  justify-content: center;
+  align-items: left;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #eef4bb;
+  margin-top: -20px;
+}
+
+.photo-counter span {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.photo-counter .photo-icon {
+  margin-left: 8px; /* Add some space between the text and icon */
+  vertical-align: middle; /* Align the icon with the text */
+}
+
+.photo-counter .max-reached {
+  color: #ff0000; /* Red color when the max limit is reached */
+  font-weight: bold;
 }
 
 .add-more-button {
@@ -1086,8 +1123,8 @@ img {
 /* When active, change the icon color too */
 /* Base styling for icons */
 .bottom-menu-icon {
-  width: 23px;
-  height: 23px;
+  width: 33px;
+  height: 33px;
   color: var(--color-accent);
   margin-bottom: 4px;
   background: rgba(2, 8, 2, 0.351);
@@ -2285,7 +2322,7 @@ img {
   background-color: transparent;
   color: var(--color-accent);
   border: solid 2px var(--color-accent);
-  border-radius: 20px;
+  border-radius: 8px;
   margin-top: -15px;
   padding: 4px 8px;
   font-weight: bold;
@@ -2543,6 +2580,9 @@ img {
     width: 22px;
     height: 22px;
   }
+  .photo-counter {
+    font-size: 0.875rem; /* Slightly smaller font for smaller screens */
+  }
   /* Larger inputs for better touch control */
   .bpm-input {
     width: 100px;
@@ -2588,6 +2628,9 @@ img {
     max-height: calc(100vh - 120px); /* Account for header/footer */
   }
 }
+.photo-counter {
+  font-size: 1rem; /* Regular font size for tablets */
+}
 /* Desktop Styles - 1024px and above */
 @media screen and (min-width: 1024px) {
   .music-panel-inner,
@@ -2619,6 +2662,10 @@ img {
     width: calc(100% - 2rem);
     max-width: calc(100% - 2rem);
     padding: var(--spacing-xl) var(--spacing-xxl);
+  }
+
+  .photo-counter {
+    font-size: 1.125rem; /* Larger font size for desktops */
   }
   .edit-panel,
   .music-panel,

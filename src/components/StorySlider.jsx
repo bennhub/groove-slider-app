@@ -8,10 +8,13 @@ import {
   ChevronDown,
   ChevronUp,
   PlusCircle,
+  CornerDownRight,
+  ArrowBigRight,
   X,
   Save,
   Loader,
   ImagePlus,
+  Images,
   Clock,
   Play,
   Pause,
@@ -47,12 +50,19 @@ import ExportModal from "./ExportModal";
 // import Save Sessions
 import SaveSessionModal from "./SaveSessionModal";
 import SessionsList from "./SessionsList";
-import { saveSession, loadSession } from "./indexedDBService";
+import {
+  saveSession,
+  loadSession,
+  saveBpmValue,
+  getBpmValue,
+} from "./indexedDBService";
 import "./sessionStyles.css";
 // WavformVisualizer
 import WaveformVisualizer from "./WaveformVisualizer";
 // Beat detect
 import { analyze } from "web-audio-beat-detector";
+// Audius Track Search
+import AudiusTrackSearch from "./AudiusTrackSearch";
 
 //==============================================
 // DEVICE DETECTION
@@ -141,7 +151,7 @@ const GrooveGalleryLanding = ({
                 justifyContent: "left",
               }}
             >
-            <Settings />
+              <Settings />
             </span>
           </button>
           <h1 className="app-title">Groove Slider v1.3</h1>
@@ -256,6 +266,7 @@ const MusicPanel = ({
 }) => {
   // State
   const [currentTime, setCurrentTime] = useState(0);
+  const [isAudiusModalOpen, setIsAudiusModalOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(1);
   const [duration, setDuration] = useState(0);
@@ -264,6 +275,7 @@ const MusicPanel = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [audioContext, setAudioContext] = useState(null);
   const timeUpdateRef = useRef(null);
+  const [title, setTitle] = useState("");
 
   // Reference to store the intended playback position
   const intendedTimeRef = useRef(null);
@@ -289,7 +301,27 @@ const MusicPanel = ({
    */
   const detectBPM = async (audioUrl) => {
     try {
-      console.log("Starting BPM detection...");
+      console.log("Starting BPM detection process for:", audioUrl);
+
+      // Check if this is a streaming URL (Audius proxy)
+      const isStreamingUrl = audioUrl.includes(
+        "lingering-surf-27dd.benhayze.workers.dev"
+      );
+
+      if (isStreamingUrl) {
+        // For streaming tracks, return the pre-defined BPM
+        console.log("Streaming track detected, using pre-defined BPM");
+        return bpm; // Use the existing bpm state
+      }
+
+      // First check if we have a cached BPM value
+      const cachedBpm = await getBpmValue(audioUrl);
+      if (cachedBpm !== null) {
+        console.log(`Using cached BPM: ${cachedBpm}`);
+        return cachedBpm;
+      }
+
+      console.log("No cached BPM found, analyzing audio...");
       setIsAnalyzing(true);
 
       // Create a separate audio context just for BPM detection
@@ -297,13 +329,25 @@ const MusicPanel = ({
         window.webkitAudioContext)();
 
       // Fetch the audio data
-      const response = await fetch(audioUrl);
-      const arrayBuffer = await response.arrayBuffer();
+      let arrayBuffer;
+      try {
+        const response = await fetch(audioUrl);
+        arrayBuffer = await response.arrayBuffer();
+      } catch (fetchError) {
+        console.error("Failed to fetch audio for BPM detection:", fetchError);
+        return 120; // Default fallback BPM
+      }
 
       console.log("Audio data fetched, decoding...");
 
       // Decode the audio data
-      const audioBuffer = await bpmAudioContext.decodeAudioData(arrayBuffer);
+      let audioBuffer;
+      try {
+        audioBuffer = await bpmAudioContext.decodeAudioData(arrayBuffer);
+      } catch (decodeError) {
+        console.error("Failed to decode audio for BPM detection:", decodeError);
+        return 120; // Default fallback BPM
+      }
 
       console.log("Audio decoded, analyzing tempo...");
 
@@ -322,6 +366,10 @@ const MusicPanel = ({
       const finalTempo = Math.round(adjustedTempo);
       console.log(`Final detected BPM: ${finalTempo}`);
 
+      // Save the detected BPM to the cache
+      await saveBpmValue(audioUrl, finalTempo);
+      console.log(`BPM value ${finalTempo} cached for future use`);
+
       return finalTempo;
     } catch (error) {
       console.error("BPM detection failed:", error);
@@ -330,7 +378,6 @@ const MusicPanel = ({
       setIsAnalyzing(false);
     }
   };
-
   /**
    * Enhanced time update handler with forced synchronization
    */
@@ -425,53 +472,92 @@ const MusicPanel = ({
     }
   }, [audioRef, controlsRef, isPlaying]);
 
-  /**
-   * Fixed play/pause handler that prevents the timing jump
-   */
-  const handlePlayPause = async () => {
-    if (!controlsRef.current) return;
-
+  // Updated handlePlayPause function with fixes for no-music scenario
+  // Completely reworked handlePlayPause to fix the no-music issue
+  // Completely simplified handlePlayPause function
+  const handlePlayPause = () => {
+    // If currently playing, stop everything
     if (isPlaying) {
-      // Pause logic - this is simple
-      controlsRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      try {
-        // Play logic - this needs to be precise
+      console.log("Stopping playback");
 
-        // 1. Store the EXACT time where we want to start
-        const exactStartTime = controlsRef.current.currentTime;
-        intendedTimeRef.current = exactStartTime;
-
-        // 2. Set the current time explicitly right before playing
-        controlsRef.current.currentTime = exactStartTime;
-
-        // 3. Resume the AudioContext to avoid delays
-        if (audioContext && audioContext.state === "suspended") {
-          await audioContext.resume();
-        }
-
-        // 4. Start precise playback
-        await controlsRef.current.play();
-
-        // 5. Set up a backup check that forces the correct start time
-        setTimeout(() => {
-          if (
-            Math.abs(controlsRef.current.currentTime - exactStartTime) > 0.005
-          ) {
-            console.log(
-              `Forced correction: ${controlsRef.current.currentTime} -> ${exactStartTime}`
-            );
-            controlsRef.current.currentTime = exactStartTime;
-          }
-        }, 10);
-
-        setIsPlaying(true);
-      } catch (err) {
-        console.error("Playback error:", err);
-        intendedTimeRef.current = null;
+      // Explicitly clear the interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
+
+      // Stop audio if it exists
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch (e) {
+          console.error("Error pausing audio:", e);
+        }
+      }
+
+      // Update state last
+      setIsPlaying(false);
+      return;
     }
+
+    // Starting playback - reset to first slide if at the end
+    if (currentIndex === stories.length - 1) {
+      setCurrentIndex(0);
+    }
+
+    console.log("Starting playback");
+
+    // Start audio only if we have music
+    if (musicUrl) {
+      try {
+        // Create a new audio element each time
+        const audio = new Audio(musicUrl);
+        audio.currentTime = musicStartPoint;
+        audioRef.current = audio;
+
+        // Don't await this - it might fail and we don't want to block
+        audio.play().catch((err) => {
+          console.error("Audio playback failed:", err);
+          console.log("Continuing with slideshow without audio");
+        });
+      } catch (e) {
+        console.error("Error setting up audio:", e);
+        // Continue anyway
+      }
+    } else {
+      console.log("No music URL, running slideshow without audio");
+    }
+
+    // Set up interval for slideshow
+    const intervalTime = duration * 1000;
+    console.log(`Setting up interval with duration: ${intervalTime}ms`);
+
+    // Clear any existing interval first
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    // Start a new interval
+    intervalRef.current = setInterval(() => {
+      setCurrentIndex((prev) => {
+        if (!isLoopingEnabled && prev >= stories.length - 1) {
+          // At the end and not looping
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          if (audioRef.current) {
+            audioRef.current.pause();
+          }
+          setIsPlaying(false);
+          return prev;
+        }
+        return (prev + 1) % stories.length;
+      });
+    }, intervalTime);
+
+    // Update the playing state
+    setIsPlaying(true);
   };
 
   /**
@@ -622,7 +708,7 @@ const MusicPanel = ({
             />
           </label>
           {/* Recording button */}
-          <label className="record-button">
+          {/* <label className="record-button">
             <Mic className="icon" />
             <span>Record</span>
             <input
@@ -670,7 +756,119 @@ const MusicPanel = ({
               }}
               className="hidden-input"
             />
-          </label>
+          </label>*/}
+          {/* New Audius Tracks Button */}
+          <button
+            onClick={() => setIsAudiusModalOpen(true)}
+            style={{
+              background: "#6c0d9c",
+              color: "white",
+              border: "solid 2px #fbf8cd",
+              padding: "10px",
+              borderRadius: "5px",
+              display: "flex",
+              alignItems: "center",
+              textAlign: "left",
+              gap: "10px",
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-12.5v9l6-4.5z" />
+            </svg>
+            Find Music
+          </button>
+
+          {/* Audius Tracks Modal */}
+          {isAudiusModalOpen && (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                backgroundColor: "rgba(0,0,0,0.7)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 1000,
+              }}
+              onClick={() => setIsAudiusModalOpen(false)}
+            >
+              <div
+                style={{
+                  background: "white",
+                  padding: "20px",
+                  borderRadius: "10px",
+                  width: "90%",
+                  maxWidth: "800px",
+                  maxHeight: "80%",
+                  overflowY: "auto",
+                  position: "relative",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setIsAudiusModalOpen(false)}
+                  style={{
+                    position: "absolute",
+                    top: "10px",
+                    right: "10px",
+                    background: "red",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "30px",
+                    height: "30px",
+                    cursor: "pointer",
+                  }}
+                >
+                  X
+                </button>
+                <AudiusTrackSearch
+                  onTrackSelect={(track) => {
+                    try {
+                      // The track object should have a streamUrl property
+                      if (!track.streamUrl) {
+                        throw new Error("Track doesn't have a streamUrl");
+                      }
+
+                      // Set the music URL
+                      onUpload(track.streamUrl);
+
+                      // Use the BPM from the track if available, otherwise default to 120
+                      const trackBPM = track.bpm || 120;
+                      console.log(`Using track BPM: ${trackBPM}`);
+                      onBPMChange(trackBPM);
+
+                      // Reset start point to beginning
+                      onStartPointChange(0);
+
+                      // Reset audio state
+                      if (controlsRef.current) {
+                        controlsRef.current.src = track.streamUrl;
+                        controlsRef.current.currentTime = 0;
+                      }
+
+                      // Close the modal
+                      setIsAudiusModalOpen(false);
+                    } catch (error) {
+                      console.error("Error selecting Audius track:", error);
+                      alert(
+                        "Unable to play this track. Please try another one."
+                      );
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="music-player">
@@ -686,6 +884,11 @@ const MusicPanel = ({
               <span>
                 {fileName && fileName.length > 35
                   ? `${fileName.slice(0, 35)}...`
+                  : musicUrl &&
+                    musicUrl.includes(
+                      "https://lingering-surf-27dd.benhayze.workers.dev/"
+                    )
+                  ? `${title || "Audius Track"}`
                   : fileName || "Track Title"}
               </span>
             </div>
@@ -1718,6 +1921,7 @@ const StorySlider = () => {
   const [musicUrl, setMusicUrl] = useState(null);
   const [bpm, setBpm] = useState(120);
   const [musicStartPoint, setMusicStartPoint] = useState(0);
+  // Audius Track Search
   // Looping State
   const [isLoopingEnabled, setIsLoopingEnabled] = useState(true);
   // Image Preload
@@ -1726,8 +1930,11 @@ const StorySlider = () => {
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   // Refs
-  const audioRef = useRef(null);
+  const audioRef = useRef(new Audio());
   const intervalRef = useRef(null);
+
+  // audius
+  const [isAudiusModalOpen, setIsAudiusModalOpen] = useState(false);
 
   // save edit panel
   const saveStateOnEditPanelToggle = async (isOpen) => {
@@ -1812,6 +2019,7 @@ const StorySlider = () => {
   }, []);
 
   // Handle file uploads
+  // Handle file uploads with 25 photo limit
   const handleFileUpload = async (event) => {
     const files = Array.from(event.target.files).filter((file) =>
       file.type.startsWith("image/")
@@ -1822,9 +2030,31 @@ const StorySlider = () => {
       return;
     }
 
-    // Process files one by one with base64 data
+    // Check if adding these files would exceed the 25 photo limit
+    const currentPhotoCount = stories.length;
+    const remainingSlots = 25 - currentPhotoCount;
+
+    if (remainingSlots <= 0) {
+      // No slots left, show error message
+      alert(
+        "Maximum limit of 25 photos reached. Please remove some photos before adding more."
+      );
+      return;
+    }
+
+    if (files.length > remainingSlots) {
+      // Too many files selected, only process up to the limit
+      alert(
+        `Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`
+      );
+      // Slice the files array to only include up to the remaining slots
+      files.slice(0, remainingSlots);
+    }
+
+    // Process files one by one with base64 data (up to the limit)
+    const filesToProcess = files.slice(0, remainingSlots);
     const newStories = await Promise.all(
-      files.map(async (file) => {
+      filesToProcess.map(async (file) => {
         // Read file as base64 data
         const base64Data = await readFileAsBase64(file);
 
@@ -1904,70 +2134,145 @@ const StorySlider = () => {
   };
   // Playback control
   const startAutoRotation = () => {
+    // Clear any existing interval first to prevent multiple timers
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current);
+      console.log("Cleared existing interval before starting new one");
+    }
+
+    console.log("Starting auto rotation with duration:", duration * 1000, "ms");
+
     intervalRef.current = setInterval(() => {
       setCurrentIndex((prevIndex) => {
         // If we're not looping and at the last slide
         if (!isLoopingEnabled && prevIndex >= stories.length - 1) {
-          stopAutoRotation();
-          setIsPlaying(false);
-          // Stop music if it's playing
+          stopAutoRotation(); // Stop rotation
           if (audioRef.current) {
-            audioRef.current.pause();
+            audioRef.current.pause(); // Stop music
           }
-          return prevIndex;
+          return prevIndex; // Keep at last slide
         }
         return (prevIndex + 1) % stories.length;
       });
     }, duration * 1000);
   };
+
   const stopAutoRotation = () => {
-    if (intervalRef.current) {
+    console.log(
+      "Stopping auto rotation, current interval ref:",
+      intervalRef.current
+    );
+
+    if (intervalRef.current !== null) {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      console.log("Interval cleared successfully");
+    } else {
+      console.warn(
+        "No interval to clear - this might indicate a syncing issue"
+      );
     }
+
+    // Force isPlaying to false as a safety measure
+    setIsPlaying(false);
   };
 
   const handlePlayPause = async () => {
     if (isPlaying) {
+      // Pause logic
       stopAutoRotation();
       if (audioRef.current) {
         audioRef.current.pause();
       }
       setIsPlaying(false);
     } else {
+      // Play logic
       if (currentIndex === stories.length - 1) {
         setCurrentIndex(0);
       }
 
-      // Start the rotation first
-      startAutoRotation();
+      try {
+        // Instead of creating a new Audio element, update the existing one
+        if (audioRef.current) {
+          // Set the source if needed
+          if (audioRef.current.src !== musicUrl) {
+            audioRef.current.src = musicUrl;
+          }
 
-      if (audioRef.current && musicUrl) {
-        // Store exact intended time
-        const exactStartTime = musicStartPoint;
+          // Set the current time to the start point
+          audioRef.current.currentTime = musicStartPoint;
 
-        // Set it precisely before attempting to play
-        audioRef.current.currentTime = exactStartTime;
+          // This is the key change - we're keeping the same audio reference
+          // that the waveform visualizer is using, just updating its properties
 
-        try {
+          // Start the slideshow
+          startAutoRotation();
+
+          // Try to play the audio
+          console.log("Attempting to play using existing audio reference");
           await audioRef.current.play();
+          console.log("Playback started with existing audio reference");
+        } else {
+          // Fallback if no audio reference exists
+          const newAudio = new Audio(musicUrl);
+          newAudio.currentTime = musicStartPoint;
+          audioRef.current = newAudio;
 
-          // Immediately verify and correct any timing drift after playback starts
-          setTimeout(() => {
-            if (
-              Math.abs(audioRef.current.currentTime - exactStartTime) > 0.01
-            ) {
-              console.log("Correcting audio timing drift on play");
-              audioRef.current.currentTime = exactStartTime;
-            }
-          }, 10);
-        } catch (err) {
-          console.log("Play error:", err);
+          // Start the slideshow
+          startAutoRotation();
+
+          await newAudio.play();
+          console.log("Playback started with new audio reference");
         }
-      }
 
-      setIsPlaying(true);
+        setIsPlaying(true);
+      } catch (err) {
+        console.error("Play error:", err);
+        alert(
+          "Unable to play audio. The slideshow will continue without music."
+        );
+
+        // Continue with slideshow even if audio fails
+        startAutoRotation();
+        setIsPlaying(true);
+      }
     }
   };
+
+  // Add this to your component to track any runaway intervals or timers
+  useEffect(() => {
+    // Store the original setTimeout and setInterval functions
+    const originalSetTimeout = window.setTimeout;
+    const originalSetInterval = window.setInterval;
+
+    let timeoutCount = 0;
+    let intervalCount = 0;
+
+    // Override setTimeout to log and count
+    window.setTimeout = function (...args) {
+      timeoutCount++;
+      console.log(`setTimeout #${timeoutCount} called with delay ${args[1]}ms`);
+      return originalSetTimeout.apply(this, args);
+    };
+
+    // Override setInterval to log and count
+    window.setInterval = function (...args) {
+      intervalCount++;
+      console.log(
+        `setInterval #${intervalCount} called with delay ${args[1]}ms`
+      );
+      return originalSetInterval.apply(this, args);
+    };
+
+    // Cleanup function to restore original functions
+    return () => {
+      window.setTimeout = originalSetTimeout;
+      window.setInterval = originalSetInterval;
+      console.log(
+        `Final counts: ${timeoutCount} timeouts, ${intervalCount} intervals`
+      );
+    };
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -2476,11 +2781,17 @@ const StorySlider = () => {
             <div className="slider-container">
               <div className="title-bar">
                 <h1 className="slider-title">Groove Slider</h1>
+                <div className="photo-counter">
+                <span className={stories.length >= 25 ? "max-reached" : ""}>
+    {/* Add the image icon with desired size */}
+    {stories.length} / 25  <Images size={25} />
+  </span>
+                </div>
                 <button
                   onClick={() => setShowLanding(true)}
                   className="projects-button"
                 >
-                  back
+                  <ArrowBigRight size={28} />
                 </button>
               </div>
               <audio ref={audioRef} src={musicUrl} loop={true} />

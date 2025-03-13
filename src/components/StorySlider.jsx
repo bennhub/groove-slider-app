@@ -1973,43 +1973,46 @@ const StorySlider = () => {
   // Handle file uploads
   // Handle file uploads with 25 photo limit
   const handleFileUpload = async (event) => {
+    // Add comprehensive logging
+    console.log("File Upload Started", {
+      musicUrlPresent: !!musicUrl,
+      currentStoriesCount: stories.length
+    });
+  
     const files = Array.from(event.target.files).filter((file) =>
       file.type.startsWith("image/")
     );
-
+  
     if (files.length === 0) {
       alert("Please select image files only.");
       return;
     }
-
+  
     // Check if adding these files would exceed the 25 photo limit
     const currentPhotoCount = stories.length;
     const remainingSlots = 25 - currentPhotoCount;
-
+  
     if (remainingSlots <= 0) {
-      // No slots left, show error message
       alert(
         "Maximum limit of 25 photos reached. Please remove some photos before adding more."
       );
       return;
     }
-
+  
     if (files.length > remainingSlots) {
-      // Too many files selected, only process up to the limit
       alert(
         `Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`
       );
-      // Slice the files array to only include up to the remaining slots
       files.slice(0, remainingSlots);
     }
-
+  
     // Process files one by one with base64 data (up to the limit)
     const filesToProcess = files.slice(0, remainingSlots);
     const newStories = await Promise.all(
       filesToProcess.map(async (file) => {
         // Read file as base64 data
         const base64Data = await readFileAsBase64(file);
-
+  
         return {
           type: "image",
           url: URL.createObjectURL(file),
@@ -2019,22 +2022,34 @@ const StorySlider = () => {
         };
       })
     );
-
-    // Update state with new stories
-    const updatedStories = [...stories, ...newStories];
-    setStories(updatedStories);
-
+  
+    // Force a complete reset of the component's view state
+    setStories(prevStories => {
+      const updatedStories = [...prevStories, ...newStories];
+      
+      // Add comprehensive logging
+      console.log("Stories Update", {
+        prevStoriesCount: prevStories.length,
+        newStoriesCount: newStories.length,
+        totalStoriesCount: updatedStories.length,
+        newStoriesUrls: newStories.map(story => story.url)
+      });
+  
+      return updatedStories;
+    });
+  
+    // Ensure we reset to the first image
+    setCurrentIndex(0);
+  
     // Clear the file input
     event.target.value = "";
-
+  
     // Silent auto-save after adding images
     if (newStories.length > 0) {
       try {
-        // Call your existing save function but with silent flag and make the name clearly an auto-save
         await handleSaveSessionToDb("auto_save_" + Date.now(), true);
-
         console.log(
-          `Auto-save completed with ${updatedStories.length} total images`
+          `Auto-save completed with ${newStories.length} total new images`
         );
       } catch (error) {
         console.error("Auto-save failed:", error);
@@ -2190,6 +2205,15 @@ const StorySlider = () => {
       }
     }
   };
+
+  //stroy states
+  useEffect(() => {
+    console.log("Stories State Changed", {
+      storiesCount: stories.length,
+      currentIndex,
+      musicUrlPresent: !!musicUrl
+    });
+  }, [stories, currentIndex, musicUrl]);
 
   // Add this to your component to track any runaway intervals or timers
   useEffect(() => {

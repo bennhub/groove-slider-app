@@ -472,9 +472,7 @@ const MusicPanel = ({
     }
   }, [audioRef, controlsRef, isPlaying]);
 
-  // Updated handlePlayPause function with fixes for no-music scenario
-  // Completely reworked handlePlayPause to fix the no-music issue
-  // Completely simplified handlePlayPause function
+  // Updated handlePlayPause function 
   const handlePlayPause = () => {
     // If currently playing, stop everything
     if (isPlaying) {
@@ -2154,9 +2152,8 @@ const StorySlider = () => {
       setIsPlaying(false);
     } else {
       // Play logic
-      if (currentIndex === stories.length - 1) {
-        setCurrentIndex(0);
-      }
+      // Always reset to first slide when starting playback
+      setCurrentIndex(0);
 
       try {
         // Instead of creating a new Audio element, update the existing one
@@ -2168,9 +2165,6 @@ const StorySlider = () => {
 
           // Set the current time to the start point
           audioRef.current.currentTime = musicStartPoint;
-
-          // This is the key change - we're keeping the same audio reference
-          // that the waveform visualizer is using, just updating its properties
 
           // Start the slideshow
           startAutoRotation();

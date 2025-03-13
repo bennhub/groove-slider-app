@@ -1,4 +1,4 @@
-# Clip & Slide
+# Groove Slider
 
 A modern, interactive media slideshow creator built with React. Create engaging presentations by combining images, videos, and audio with customizable transitions, music synchronization, and export capabilities.
 

@@ -37,6 +37,10 @@ import {
   Expand,
   Minimize,
   Mic,
+  Trash2,
+  Check,
+  XCircle,
+  MoveVertical,
 } from "lucide-react";
 
 //firebase
@@ -155,7 +159,7 @@ const GrooveGalleryLanding = ({
             </span>
           </button>
           <h1 className="app-title">Groove Slider v01.4</h1>
-          {/* Always visible close button */}
+          {/* Always visible close button */}g
           <button className="close-landing-button" onClick={onClose}>
             <X size={24} />
           </button>
@@ -1507,102 +1511,485 @@ const EditPanel = ({
   onDelete,
   saveStateOnEditPanelToggle,
 }) => {
-  const [positions, setPositions] = useState(
-    stories.map((_, index) => index + 1)
-  );
-  const [selectedIndex, setSelectedIndex] = useState(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-  // Handle tap selection
-  const handleTapSelect = (index) => {
-    setSelectedIndex(selectedIndex === index ? null : index);
+  // Mode state
+  const [mode, setMode] = useState("view"); // "view", "reorder", "delete"
+  
+  // For reorder mode
+  const [selectedIndices, setSelectedIndices] = useState([]);
+  const [tempOrder, setTempOrder] = useState([]);
+  
+  // For delete mode
+  const [selectedToDelete, setSelectedToDelete] = useState([]);
+  
+  // Initialize tempOrder with existing stories when entering reorder mode
+  useEffect(() => {
+    if (mode === "reorder") {
+      setTempOrder([...stories]);
+      setSelectedIndices([]);
+    } else if (mode === "delete") {
+      setSelectedToDelete([]);
+    }
+  }, [mode, stories]);
+
+  // Handle entering reorder mode
+  const handleEnterReorderMode = () => {
+    setMode("reorder");
   };
-  // Enhanced drag handlers
-  const handleDragStart = (e, index) => {
-    if (selectedIndex === index) {
-      setIsDragging(true);
-      e.currentTarget.style.cursor = "grabbing";
+
+  // Handle entering delete mode
+  const handleEnterDeleteMode = () => {
+    setMode("delete");
+  };
+
+  // Handle going back to view mode
+  const handleBack = () => {
+    setMode("view");
+  };
+
+  // Handle photo selection in reorder mode
+  const handlePhotoSelectForReorder = (index) => {
+    if (mode !== "reorder") return;
+    
+    // Check if already in selected indices
+    const indexInSelection = selectedIndices.indexOf(index);
+    
+    if (indexInSelection !== -1) {
+      // If already selected, remove it
+      const newSelectedIndices = [...selectedIndices];
+      newSelectedIndices.splice(indexInSelection, 1);
+      setSelectedIndices(newSelectedIndices);
+    } else {
+      // If not selected, add it to the end
+      setSelectedIndices([...selectedIndices, index]);
+    }
+    
+    console.log("Updated selection:", {
+      selectedIndices: [...selectedIndices, index].join(", "),
+      index
+    });
+  };
+
+  // Handle photo selection in delete mode
+  const handlePhotoSelectForDelete = (index) => {
+    if (mode !== "delete") return;
+    
+    // Check if already selected for deletion
+    const isSelected = selectedToDelete.includes(index);
+    
+    if (isSelected) {
+      // If already selected, remove it
+      setSelectedToDelete(selectedToDelete.filter(idx => idx !== index));
+    } else {
+      // If not selected, add it
+      setSelectedToDelete([...selectedToDelete, index]);
     }
   };
-  const handleDragOver = (e, index) => {
-    e.preventDefault();
-    if (isDragging && selectedIndex !== null && selectedIndex !== index) {
-      setDragOverIndex(index);
+
+  // Apply reordering
+  const handleApplyReorder = () => {
+    if (selectedIndices.length === 0) {
+      // Nothing to reorder
+      setMode("view");
+      return;
     }
-  };
-  const handleDrop = (targetIndex) => {
-    if (selectedIndex !== null && selectedIndex !== targetIndex) {
-      // Perform the reorder
-      const newStories = [...stories];
-      const [movedItem] = newStories.splice(selectedIndex, 1);
-      newStories.splice(targetIndex, 0, movedItem);
-      // Update positions
-      const updatedPositions = newStories.map((_, i) => i + 1);
-      setPositions(updatedPositions);
-      onReorder(newStories);
-      // Reset states
-      setSelectedIndex(null);
-      setDragOverIndex(null);
-      setIsDragging(false);
+    
+    // Create a new ordered array based on the selected indices
+    let newOrder = [];
+    
+    // First add all selected stories in the order they were selected
+    for (let i = 0; i < selectedIndices.length; i++) {
+      const storyIndex = selectedIndices[i];
+      newOrder.push(stories[storyIndex]);
     }
+    
+    // Then add all unselected stories to the end
+    for (let i = 0; i < stories.length; i++) {
+      if (!selectedIndices.includes(i)) {
+        newOrder.push(stories[i]);
+      }
+    }
+    
+    console.log("Reordering stories:", {
+      originalOrder: stories.map(s => s.url),
+      newOrder: newOrder.map(s => s.url),
+      selectedIndices
+    });
+    
+    // Apply the reordering
+    onReorder(newOrder);
+    
+    // Reset and go back to view mode
+    setSelectedIndices([]);
+    setMode("view");
   };
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    setDragOverIndex(null);
+
+  // Apply deletion
+  const handleApplyDelete = () => {
+    if (selectedToDelete.length === 0) {
+      // Nothing to delete
+      setMode("view");
+      return;
+    }
+    
+    // Sort indices in descending order to avoid index shifts during deletion
+    const sortedIndices = [...selectedToDelete].sort((a, b) => b - a);
+    
+    // Create a new stories array by deleting selected items
+    let newStories = [...stories];
+    for (const index of sortedIndices) {
+      newStories.splice(index, 1);
+    }
+    
+    // Apply the deletion
+    onReorder(newStories);
+    setMode("view");
+    
+    // Clear selection
+    setSelectedToDelete([]);
   };
+
+  // Cancel current operation
+  const handleCancel = () => {
+    if (mode === "reorder") {
+      setSelectedIndices([]);
+    } else if (mode === "delete") {
+      setSelectedToDelete([]);
+    }
+    setMode("view");
+  };
+
   return (
     <div className="edit-panel">
-      <div className="edit-panel-header">
-        <h3>Re-order by Tap, Drag, Drop</h3>
-        <button className="edit-panel-close" onClick={onClose}>
-          <X size={20} />
-        </button>
+      {/* Header with mode-specific content */}
+      <div className="edit-panel-header" style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "10px 15px",
+        backgroundColor: "#1a1a1a",
+        borderBottom: "1px solid rgba(255,255,255,0.1)"
+      }}>
+        {mode === "view" ? (
+          <>
+            <h3 style={{ margin: 0 }}>Edit Photos</h3>
+            <div style={{ display: "flex", gap: "15px" }}>
+              <button 
+                className="mode-button"
+                onClick={handleEnterReorderMode}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "5px 10px",
+                  borderRadius: "5px",
+                  transition: "background-color 0.2s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+              >
+                <MoveVertical size={18} />
+                <span>Reorder</span>
+              </button>
+              <button 
+                className="mode-button"
+                onClick={handleEnterDeleteMode}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "5px 10px",
+                  borderRadius: "5px",
+                  transition: "background-color 0.2s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+              >
+                <Trash2 size={18} />
+                <span>Delete</span>
+              </button>
+              <button 
+                className="close-button"
+                onClick={onClose}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "50%"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </>
+        ) : mode === "reorder" ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <button 
+                onClick={handleBack}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "50%"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+              >
+                <X size={20} />
+              </button>
+              <h3 style={{ margin: 0 }}>Reorder Photos</h3>
+            </div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button 
+                onClick={handleCancel}
+                style={{
+                  background: "none",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  color: "white",
+                  cursor: "pointer",
+                  padding: "5px 15px",
+                  borderRadius: "5px"
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleApplyReorder}
+                style={{
+                  backgroundColor: "#6c0d9c",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  padding: "5px 15px",
+                  borderRadius: "5px",
+                  opacity: selectedIndices.length > 0 ? 1 : 0.5
+                }}
+                disabled={selectedIndices.length === 0}
+              >
+                Apply
+              </button>
+            </div>
+          </>
+        ) : mode === "delete" ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <button 
+                onClick={handleBack}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "50%"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+              >
+                <X size={20} />
+              </button>
+              <h3 style={{ margin: 0 }}>
+                {selectedToDelete.length === 0 
+                  ? "Select Photos to Delete" 
+                  : `${selectedToDelete.length} Selected`}
+              </h3>
+            </div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button 
+                onClick={handleCancel}
+                style={{
+                  background: "none",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  color: "white",
+                  cursor: "pointer",
+                  padding: "5px 15px",
+                  borderRadius: "5px"
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleApplyDelete}
+                style={{
+                  backgroundColor: "#e74c3c",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  padding: "5px 15px",
+                  borderRadius: "5px",
+                  opacity: selectedToDelete.length > 0 ? 1 : 0.5
+                }}
+                disabled={selectedToDelete.length === 0}
+              >
+                Delete
+              </button>
+            </div>
+          </>
+        ) : null}
       </div>
-      <div className="thumbnails-container">
+      
+      {/* Instructions */}
+      {mode === "reorder" && (
+        <div style={{
+          padding: "10px 15px",
+          backgroundColor: "rgba(108, 13, 156, 0.2)",
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
+          fontSize: "14px",
+          textAlign: "center"
+        }}>
+          Select photos in the order you want them to appear
+        </div>
+      )}
+      
+      {mode === "delete" && (
+        <div style={{
+          padding: "10px 15px",
+          backgroundColor: "rgba(231, 76, 60, 0.2)",
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
+          fontSize: "14px",
+          textAlign: "center"
+        }}>
+          Select photos you want to delete
+        </div>
+      )}
+
+      {/* Thumbnails grid */}
+      <div className="thumbnails-container" style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+        gap: "10px",
+        padding: "15px",
+        overflowY: "auto",
+        maxHeight: "70vh"
+      }}>
         {stories.map((story, index) => (
           <div
             key={index}
-            className={`thumbnail ${selectedIndex === index ? "selected" : ""}
-${dragOverIndex === index ? "drag-over" : ""}`}
-            onClick={() => handleTapSelect(index)}
-            onMouseDown={(e) => handleDragStart(e, index)}
-            onTouchStart={(e) => handleDragStart(e, index)}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onMouseOver={(e) => isDragging && handleDragOver(e, index)}
-            onTouchMove={(e) => {
-              const touch = e.touches[0];
-              const target = document.elementFromPoint(
-                touch.clientX,
-                touch.clientY
-              );
-              const thumbnailEl = target.closest(".thumbnail");
-              if (thumbnailEl) {
-                const idx = Array.from(thumbnailEl.parentNode.children).indexOf(
-                  thumbnailEl
-                );
-                handleDragOver(e, idx);
+            className={`thumbnail ${
+              mode === "reorder" && selectedIndices.includes(index) ? "selected" : ""
+            } ${
+              mode === "delete" && selectedToDelete.includes(index) ? "selected-delete" : ""
+            }`}
+            onClick={() => {
+              if (mode === "reorder") {
+                handlePhotoSelectForReorder(index);
+              } else if (mode === "delete") {
+                handlePhotoSelectForDelete(index);
               }
             }}
-            onMouseUp={() => handleDrop(index)}
-            onTouchEnd={() =>
-              dragOverIndex !== null && handleDrop(dragOverIndex)
-            }
-            draggable={selectedIndex === index}
+            style={{
+              position: "relative",
+              cursor: "pointer",
+              borderRadius: "8px",
+              overflow: "hidden",
+              border: mode === "delete" && selectedToDelete.includes(index)
+                ? "2px solid #e74c3c"
+                : mode === "reorder" && selectedIndices.includes(index)
+                ? "2px solid #6c0d9c"
+                : "2px solid transparent",
+              transition: "transform 0.2s, box-shadow 0.2s, border 0.2s",
+              aspectRatio: "1/1"
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "scale(1.03)";
+              e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.3)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
-            <div className="thumbnail-content">
-              <button
-                className="delete-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(index);
+            {/* Photo thumbnail */}
+            <div style={{
+              position: "relative",
+              width: "100%",
+              height: "100%"
+            }}>
+              <img 
+                src={story.url} 
+                alt={`Slide ${index + 1}`}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover"
                 }}
-              >
-                <X size={16} />
-              </button>
-              <div className="image-thumbnail">
-                <img src={story.url} alt={`Slide ${index + 1}`} />
-                {selectedIndex === index && <div className="selection-dot" />}
-              </div>
+              />
+              
+              {/* Number indicator for reorder mode */}
+              {mode === "reorder" && (
+                <div style={{
+                  position: "absolute",
+                  top: "5px",
+                  right: "5px",
+                  width: "25px",
+                  height: "25px",
+                  borderRadius: "50%",
+                  backgroundColor: selectedIndices.includes(index) 
+                    ? "#6c0d9c" 
+                    : "rgb(22, 50, 207)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: selectedIndices.includes(index) ? "white" : "#000",
+                  fontWeight: "bold",
+                  fontSize: "14px",
+                  border: "1px solid white"
+                }}>
+                  {selectedIndices.includes(index) 
+                    ? selectedIndices.indexOf(index) + 1 
+                    : ""}
+                </div>
+              )}
+              
+              {/* Checkmark indicator for delete mode */}
+              {mode === "delete" && (
+                <div style={{
+                  position: "absolute",
+                  top: "5px",
+                  right: "5px",
+                  width: "25px",
+                  height: "25px",
+                  borderRadius: "50%",
+                  backgroundColor: selectedToDelete.includes(index) 
+                    ? "#e74c3c" 
+                    : "rgba(234, 14, 14, 0.5)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  border: "1px solid white"
+                }}>
+                  {selectedToDelete.includes(index) 
+                    ? <Check size={16} />
+                    : ""}
+                </div>
+              )}
             </div>
           </div>
         ))}

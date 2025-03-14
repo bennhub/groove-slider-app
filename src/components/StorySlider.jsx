@@ -1969,91 +1969,114 @@ const StorySlider = () => {
   }, []);
 
   // Handle file uploads
-  // Handle file uploads with 25 photo limit
-  const handleFileUpload = async (event) => {
+  // Modified handleFileUpload function with playback state handling
+const handleFileUpload = async (event) => {
+  // Add comprehensive logging
+  console.log("File Upload Started", {
+    musicUrlPresent: !!musicUrl,
+    currentStoriesCount: stories.length,
+    isCurrentlyPlaying: isPlaying
+  });
+
+  // IMPORTANT: If music is playing, pause it before adding images to prevent white screen bug
+  const wasPlaying = isPlaying;
+  if (isPlaying) {
+    console.log("Pausing playback before adding images to prevent rendering issues");
+    // Call stopAutoRotation to properly clean up interval
+    stopAutoRotation();
+    // Pause audio if it exists
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    // Update state
+    setIsPlaying(false);
+  }
+
+  const files = Array.from(event.target.files).filter((file) =>
+    file.type.startsWith("image/")
+  );
+
+  if (files.length === 0) {
+    alert("Please select image files only.");
+    return;
+  }
+
+  // Check if adding these files would exceed the 25 photo limit
+  const currentPhotoCount = stories.length;
+  const remainingSlots = 25 - currentPhotoCount;
+
+  if (remainingSlots <= 0) {
+    alert(
+      "Maximum limit of 25 photos reached. Please remove some photos before adding more."
+    );
+    return;
+  }
+
+  if (files.length > remainingSlots) {
+    alert(
+      `Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`
+    );
+    files.slice(0, remainingSlots);
+  }
+
+  // Process files one by one with base64 data (up to the limit)
+  const filesToProcess = files.slice(0, remainingSlots);
+  const newStories = await Promise.all(
+    filesToProcess.map(async (file) => {
+      // Read file as base64 data
+      const base64Data = await readFileAsBase64(file);
+
+      return {
+        type: "image",
+        url: URL.createObjectURL(file),
+        originalName: file.name,
+        base64Data: base64Data,
+        dateAdded: new Date().toISOString(), // Add timestamp for tracking
+      };
+    })
+  );
+
+  // Force a complete reset of the component's view state
+  setStories((prevStories) => {
+    const updatedStories = [...prevStories, ...newStories];
+    
     // Add comprehensive logging
-    console.log("File Upload Started", {
-      musicUrlPresent: !!musicUrl,
-      currentStoriesCount: stories.length
+    console.log("Stories Update", {
+      prevStoriesCount: prevStories.length,
+      newStoriesCount: newStories.length,
+      totalStoriesCount: updatedStories.length,
+      newStoriesUrls: newStories.map(story => story.url)
     });
-  
-    const files = Array.from(event.target.files).filter((file) =>
-      file.type.startsWith("image/")
-    );
-  
-    if (files.length === 0) {
-      alert("Please select image files only.");
-      return;
-    }
-  
-    // Check if adding these files would exceed the 25 photo limit
-    const currentPhotoCount = stories.length;
-    const remainingSlots = 25 - currentPhotoCount;
-  
-    if (remainingSlots <= 0) {
-      alert(
-        "Maximum limit of 25 photos reached. Please remove some photos before adding more."
+
+    return updatedStories;
+  });
+
+  // Ensure we reset to the first image
+  setCurrentIndex(0);
+
+  // Clear the file input
+  event.target.value = "";
+
+  // Silent auto-save after adding images
+  if (newStories.length > 0) {
+    try {
+      await handleSaveSessionToDb("auto_save_" + Date.now(), true);
+      console.log(
+        `Auto-save completed with ${newStories.length} total new images`
       );
-      return;
+    } catch (error) {
+      console.error("Auto-save failed:", error);
     }
-  
-    if (files.length > remainingSlots) {
-      alert(
-        `Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`
-      );
-      files.slice(0, remainingSlots);
-    }
-  
-    // Process files one by one with base64 data (up to the limit)
-    const filesToProcess = files.slice(0, remainingSlots);
-    const newStories = await Promise.all(
-      filesToProcess.map(async (file) => {
-        // Read file as base64 data
-        const base64Data = await readFileAsBase64(file);
-  
-        return {
-          type: "image",
-          url: URL.createObjectURL(file),
-          originalName: file.name,
-          base64Data: base64Data,
-          dateAdded: new Date().toISOString(), // Add timestamp for tracking
-        };
-      })
-    );
-  
-    // Force a complete reset of the component's view state
-    setStories(prevStories => {
-      const updatedStories = [...prevStories, ...newStories];
-      
-      // Add comprehensive logging
-      console.log("Stories Update", {
-        prevStoriesCount: prevStories.length,
-        newStoriesCount: newStories.length,
-        totalStoriesCount: updatedStories.length,
-        newStoriesUrls: newStories.map(story => story.url)
-      });
-  
-      return updatedStories;
-    });
-  
-    // Ensure we reset to the first image
-    setCurrentIndex(0);
-  
-    // Clear the file input
-    event.target.value = "";
-  
-    // Silent auto-save after adding images
-    if (newStories.length > 0) {
-      try {
-        await handleSaveSessionToDb("auto_save_" + Date.now(), true);
-        console.log(
-          `Auto-save completed with ${newStories.length} total new images`
-        );
-      } catch (error) {
-        console.error("Auto-save failed:", error);
-      }
-    }
-  };
+  }
+
+  // If music was playing before, restart playback after image processing is complete
+  if (wasPlaying && musicUrl) {
+    console.log("Resuming playback after adding images");
+    setTimeout(() => {
+      handlePlayPause();
+    }, 500); // Small delay to ensure state is fully updated
+  }
+};
 
   // Helper to read file as base64
   const readFileAsBase64 = (file) => {

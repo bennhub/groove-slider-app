@@ -963,11 +963,27 @@ const EmptyState = ({ onFileUpload }) => {
 //--------------------------------------------
 // Progress Modal
 //--------------------------------------------
-const ProgressModal = ({ isOpen, progress, message }) => {
+const ProgressModal = ({ isOpen, progress, message, onCancel }) => {
   if (!isOpen) return null;
   return (
     <div className="modal-overlay">
       <div className="modal-content export-progress">
+        <button 
+          className="close-button" 
+          onClick={onCancel}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            background: 'none',
+            border: 'none',
+            color: 'white',
+            cursor: 'pointer',
+            zIndex: 1000
+          }}
+        >
+          <X size={24} />
+        </button>
         <div className="loading-container">
           <h3 className="progress-title">{message}</h3>
           <div className="progress-bar-container">
@@ -987,7 +1003,6 @@ const ProgressModal = ({ isOpen, progress, message }) => {
     </div>
   );
 };
-
 //--------------------------------------------
 // Info Modal
 //--------------------------------------------
@@ -2419,8 +2434,28 @@ const StorySlider = () => {
   const audioRef = useRef(new Audio());
   const intervalRef = useRef(null);
 
-  // audius
+  // cancel export flag
+  const isCancelledRef = useRef(false);
+
+  // audius use states
   const [isAudiusModalOpen, setIsAudiusModalOpen] = useState(false);
+
+
+  // cancel export
+  const handleCancelExport = () => {
+    if (window.confirm("Are you sure you want to cancel the export? The process will stop immediately.")) {
+      // Set the cancellation flag
+      isCancelledRef.current = true;
+      
+      // Update UI state
+      setIsExporting(false);
+      setShowProgress(false);
+      setShowShareNotification(false);
+      
+      // Show a message to the user
+      alert("Export has been canceled.");
+    }
+  };
 
   // Stop playback when exproting
   const stopPlayback = () => {
@@ -2546,19 +2581,23 @@ const StorySlider = () => {
       return;
     }
   
-    // Check if adding these files would exceed the 25 photo limit
-    const currentPhotoCount = stories.length;
-    const remainingSlots = 25 - currentPhotoCount;
-  
-    if (remainingSlots <= 0) {
-      alert("Maximum limit of 25 photos reached. Please remove some photos before adding more.");
-      return;
-    }
-  
-    if (files.length > remainingSlots) {
-      alert(`Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`);
-      files.slice(0, remainingSlots);
-    }
+   // Check if adding these files would exceed the 25 photo limit
+const currentPhotoCount = stories.length;
+const remainingSlots = 25 - currentPhotoCount;
+
+if (remainingSlots <= 0) {
+  alert("Maximum limit of 25 photos reached. Please remove some photos before adding more.");
+  return;
+}
+
+// Create a variable to store the files we'll actually process
+let filesToProcess;
+if (files.length > remainingSlots) {
+  alert(`Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`);
+  filesToProcess = files.slice(0, remainingSlots);
+} else {
+  filesToProcess = files;
+}
   
     // Show a progress modal if there are many images
     if (files.length > 3) {
@@ -2574,17 +2613,17 @@ const StorySlider = () => {
     const [width, height] = resolution.split("x").map(Number);
     const newStories = []; 
     
-    // Process files one by one with resizing
-  for (let i = 0; i < files.length; i++) { // Changed to iterate over files
-    const file = files[i];
-    setProgressMessage(`Processing image ${i + 1}/${files.length}`);
-    
-    try {
-      // Update progress
-      if (files.length > 3) {
-        setSaveProgress((i / files.length) * 100); // Changed filesToProcess to files
-        setProgressMessage(`Processing image ${i+1} of ${files.length}...`);
-      }
+  // Process files one by one with resizing
+for (let i = 0; i < filesToProcess.length; i++) {
+  const file = filesToProcess[i];
+  setProgressMessage(`Processing image ${i + 1}/${filesToProcess.length}`);
+  
+  try {
+    // Update progress
+    if (filesToProcess.length > 3) {
+      setSaveProgress((i / filesToProcess.length) * 100);
+      setProgressMessage(`Processing image ${i+1} of ${filesToProcess.length}...`);
+    }
         
         // Create display version (for slideshow UI)
         const displayImage = await resizeImage(file, {
@@ -3012,7 +3051,7 @@ const handleSaveSession = async (exportSettings) => {
   } = finalExportSettings;
   try {
     let fileHandle;
-    let fileName = "untitled.mp4";
+    let fileName = exportSettings.fileName || "untitled.mp4";
     // Existing file handle logic remains the same
     if (!("showSaveFilePicker" in window)) {
       const link = document.createElement("a");
@@ -3565,9 +3604,10 @@ const handleSaveSession = async (exportSettings) => {
               />
                
               <ProgressModal
-                isOpen={showProgress}
-                progress={saveProgress}
-                message={progressMessage}
+              isOpen={showProgress}
+              progress={saveProgress}
+              message={progressMessage}
+              onCancel={handleCancelExport}
               />
               <ShareNotification
                 isVisible={showShareNotification}

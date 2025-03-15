@@ -2214,6 +2214,79 @@ img {
   width: 20px;
   height: 20px;
 }
+
+/* Save file name Styles */
+
+/* File Name Prompt Modal Styles */
+.file-name-prompt {
+  max-width: 400px;
+  text-align: center;
+  padding: 20px;
+}
+
+.file-name-input input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 16px;
+  margin-top: 6px;
+}
+
+.file-name-input input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.file-name-input input.input-error {
+  border-color: red;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.8em;
+  margin-top: 5px;
+}
+
+.file-name-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+  gap: 10px;
+}
+
+.cancel-button {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.continue-button {
+  flex: 1;
+  background-color: var(--accent-color, #f9a826);
+  border: none;
+  color: black;
+  font-weight: bold;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.continue-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.file-name-input small {
+  display: block;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8em;
+  margin-top: 5px;
+}
 /* Share Notification Styles */
 .share-notification {
   position: fixed;

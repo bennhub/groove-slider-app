@@ -11,6 +11,15 @@ import {
 } from "lucide-react";
 import { initiateExport } from "../services/exportService";
 
+// Filename Validation Function
+const validateFileName = (name) => {
+  // More permissive validation
+  // Allows letters, numbers, spaces, underscores, hyphens, and periods
+  // Prevents completely empty filenames or filenames with only special characters
+  const fileNameRegex = /^[a-zA-Z0-9 _\-\.]+$/;
+  return fileNameRegex.test(name) && name.trim() !== "";
+};
+
 // Custom Resolution Dropdown Component
 const CustomResolutionDropdown = ({ value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +27,6 @@ const CustomResolutionDropdown = ({ value, onChange }) => {
   const resolutions = [
     { value: "720x1280", label: "720p" },
     { value: "1080x1920", label: "1080p" },
-    //{ value: "1440x2560", label: "2K" }
   ];
 
   const handleSelect = (newValue) => {
@@ -67,6 +75,11 @@ const ExportModal = ({
   const [isExportLoopEnabled, setIsExportLoopEnabled] = useState(false);
   const [loopCount, setLoopCount] = useState(1);
   const [exportError, setExportError] = useState(null);
+  
+  // New states for file name prompt
+  const [isFileNamePromptOpen, setIsFileNamePromptOpen] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const [isFileNameValid, setIsFileNameValid] = useState(false);
 
   // Calculate total slideshow duration in seconds (single playthrough)
   const slideshowDuration = stories && duration ? stories.length * duration : 0;
@@ -106,47 +119,122 @@ const ExportModal = ({
     }
   };
 
-  // Export handler
-  // Export handler
-const handleExport = async () => {
-  if (exceedsMaxDuration) {
-    setExportError(
-      "Export duration exceeds the 3-minute limit. Please reduce loop count."
-    );
-    return;
-  }
+  // Initiate export process
+  const handleInitiateExport = () => {
+    if (exceedsMaxDuration) {
+      setExportError(
+        "Export duration exceeds the 3-minute limit. Please reduce loop count."
+      );
+      return;
+    }
 
-  setExportError(null);
-
-  // Stop playback if active
-  if (stopPlayback && typeof stopPlayback === "function") {
-    stopPlayback();
-  }
-
-  // CHANGE THIS PART:
-  const exportConfig = {
-    resolution,
-    isExportLoopEnabled,
-    exportLoopDuration: isExportLoopEnabled ? totalDuration : 0, // Use duration instead of count
+    // Open file name prompt
+    setIsFileNamePromptOpen(true);
+    setFileName("");
+    setIsFileNameValid(false);
   };
 
-  try {
-    const exportData = {
-      storyData: storyData || stories,
+  // Handle file name input
+  const handleFileNameChange = (e) => {
+    const newFileName = e.target.value;
+    setFileName(newFileName);
+    setIsFileNameValid(validateFileName(newFileName));
+  };
+
+  // Proceed with export after file name
+  const handleProceedExport = async () => {
+    // Validate file name
+    if (!validateFileName(fileName)) {
+      return;
+    }
+
+    // Stop playback if active
+    if (stopPlayback && typeof stopPlayback === "function") {
+      stopPlayback();
+    }
+
+    const exportConfig = {
       resolution,
       isExportLoopEnabled,
-      exportLoopDuration: isExportLoopEnabled ? totalDuration : 0, // Change this line
+      exportLoopDuration: isExportLoopEnabled ? totalDuration : 0,
+      fileName: `${fileName}.mp4`,
     };
 
-    const exportedFile = await initiateExport(exportData, exportConfig);
-    onExport(exportedFile);
-  } catch (error) {
-    console.error("Export failed", error);
-    setExportError(error.message || "Export failed. Please try again.");
-  }
-};
+    try {
+      const exportData = {
+        storyData: storyData || stories,
+        resolution,
+        isExportLoopEnabled,
+        exportLoopDuration: isExportLoopEnabled ? totalDuration : 0,
+        fileName: `${fileName}.mp4`,
+      };
+
+      const exportedFile = await initiateExport(exportData, exportConfig);
+      
+      // Close file name prompt and reset states
+      setIsFileNamePromptOpen(false);
+      onExport(exportedFile);
+    } catch (error) {
+      console.error("Export failed", error);
+      setExportError(error.message || "Export failed. Please try again.");
+    }
+  };
+
+  // Close file name prompt
+  const handleCancelFileName = () => {
+    setIsFileNamePromptOpen(false);
+    setFileName("");
+    setIsFileNameValid(false);
+  };
 
   if (!isOpen) return null;
+
+  // File Name Prompt Overlay
+  if (isFileNamePromptOpen) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content file-name-prompt">
+          <button className="modal-close" onClick={handleCancelFileName}>
+            <X size={20} />
+          </button>
+          <h3>Name Your Export</h3>
+          <p>Choose a name for your exported video</p>
+          
+          <div className="file-name-input">
+            <input
+              type="text"
+              value={fileName}
+              onChange={handleFileNameChange}
+              placeholder="Enter file name"
+              className={!isFileNameValid && fileName ? 'input-error' : ''}
+            />
+            {!isFileNameValid && fileName && (
+              <div className="error-message">
+                Invalid characters. Use letters, numbers, spaces, and ._-
+              </div>
+            )}
+            <small>Letters, numbers, spaces, hyphens, underscores allowed only</small>
+          </div>
+          
+          <div className="file-name-actions">
+            <button 
+              className="cancel-button" 
+              onClick={handleCancelFileName}
+            >
+              Cancel
+            </button>
+            <button 
+              className="continue-button"
+              onClick={handleProceedExport}
+              disabled={!isFileNameValid || !fileName}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay">
@@ -184,10 +272,10 @@ const handleExport = async () => {
               )}
               
               <div className="info-row">
-  <span style={{ fontSize: "0.90em", color: "orange" }}>
-    Note: Max slideshow duration is 3 mins.
-  </span>
-</div>
+                <span style={{ fontSize: "0.90em", color: "orange" }}>
+                  Note: Max export duration is 3 minutes. Looping Max is up to 3mins
+                </span>
+              </div>
 
               {exceedsMaxDuration && (
                 <div className="duration-warning">
@@ -255,18 +343,8 @@ const handleExport = async () => {
 
             <div className="export-actions">
               <button
-                className="action-button share"
-                onClick={() => {
-                  /* Share logic */
-                }}
-              >
-                <Share className="button-icon" />
-                Share
-              </button>
-
-              <button
                 className="action-button download"
-                onClick={handleExport}
+                onClick={handleInitiateExport}
                 disabled={exceedsMaxDuration}
                 style={{
                   opacity: exceedsMaxDuration ? 0.5 : 1,
@@ -277,17 +355,6 @@ const handleExport = async () => {
                 Export
               </button>
             </div>
-
-            {exceedsMaxDuration && (
-              <div
-                className="export-error-message"
-                style={{ marginTop: "10px" }}
-              >
-                <AlertTriangle size={16} style={{ marginRight: "5px" }} />
-                Slideshow is too long. Please reduce duration or disable
-                looping.
-              </div>
-            )}
           </>
         ) : (
           <div className="loading-container">

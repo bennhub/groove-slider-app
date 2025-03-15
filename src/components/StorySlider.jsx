@@ -2584,18 +2584,21 @@ const StorySlider = () => {
     // Process files one by one with resizing
     const processedFiles = [];
     const tempFiles = [];
+    const resolution = "1920x1080"; 
     const [width, height] = resolution.split("x").map(Number);
+    const newStories = []; 
     
-    for (let i = 0; i < stories.length; i++) {
-      const story = stories[i];
-      setProgressMessage(`Processing image ${i + 1}/${stories.length}`);
-      
-      try {
-        // Update progress
-        if (files.length > 3) {
-          setSaveProgress((i / filesToProcess.length) * 100);
-          setProgressMessage(`Processing image ${i+1} of ${filesToProcess.length}...`);
-        }
+    // Process files one by one with resizing
+  for (let i = 0; i < files.length; i++) { // Changed to iterate over files
+    const file = files[i];
+    setProgressMessage(`Processing image ${i + 1}/${files.length}`);
+    
+    try {
+      // Update progress
+      if (files.length > 3) {
+        setSaveProgress((i / files.length) * 100); // Changed filesToProcess to files
+        setProgressMessage(`Processing image ${i+1} of ${files.length}...`);
+      }
         
         // Create display version (for slideshow UI)
         const displayImage = await resizeImage(file, {

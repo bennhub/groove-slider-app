@@ -1966,75 +1966,76 @@ const EditPanel = ({
             }}
           >
             {/* Photo thumbnail */}
-            <div
-              style={{
-                position: "relative",
-                width: "100%",
-                height: "100%",
-              }}
-            >
-              <img
-                src={story.url}
-                alt={`Slide ${index + 1}`}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
+<div
+  style={{
+    position: "relative",
+    width: "100%",
+    height: "100%",
+  }}
+>
+  <img
+    src={story.thumbnailData || story.url} // Use thumbnail if available, fall back to url
+    alt={`Slide ${index + 1}`}
+    style={{
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+    }}
+  />
 
-              {/* Number indicator for reorder mode */}
-              {mode === "reorder" && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "5px",
-                    right: "5px",
-                    width: "25px",
-                    height: "25px",
-                    borderRadius: "50%",
-                    backgroundColor: selectedIndices.includes(index)
-                      ? "#6c0d9c"
-                      : "rgb(22, 50, 207)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: selectedIndices.includes(index) ? "white" : "#000",
-                    fontWeight: "bold",
-                    fontSize: "14px",
-                    border: "1px solid white",
-                  }}
-                >
-                  {selectedIndices.includes(index)
-                    ? selectedIndices.indexOf(index) + 1
-                    : ""}
-                </div>
-              )}
+  {/* Number indicator for reorder mode */}
+  {mode === "reorder" && (
+    <div
+      style={{
+        position: "absolute",
+        top: "5px",
+        right: "5px",
+        width: "25px",
+        height: "25px",
+        borderRadius: "50%",
+        backgroundColor: selectedIndices.includes(index)
+          ? "#6c0d9c"
+          : "rgb(22, 50, 207)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: selectedIndices.includes(index) ? "white" : "#000",
+        fontWeight: "bold",
+        fontSize: "14px",
+        border: "1px solid white",
+      }}
+    >
+      {selectedIndices.includes(index)
+        ? selectedIndices.indexOf(index) + 1
+        : ""}
+    </div>
+  )}
 
-              {/* Checkmark indicator for delete mode */}
-              {mode === "delete" && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "5px",
-                    right: "5px",
-                    width: "25px",
-                    height: "25px",
-                    borderRadius: "50%",
-                    backgroundColor: selectedToDelete.includes(index)
-                      ? "#e74c3c"
-                      : "rgba(234, 14, 14, 0.5)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "white",
-                    border: "1px solid white",
-                  }}
-                >
-                  {selectedToDelete.includes(index) ? <Check size={16} /> : ""}
-                </div>
-              )}
-            </div>
+  {/* Checkmark indicator for delete mode */}
+  {mode === "delete" && (
+    <div
+      style={{
+        position: "absolute",
+        top: "5px",
+        right: "5px",
+        width: "25px",
+        height: "25px",
+        borderRadius: "50%",
+        backgroundColor: selectedToDelete.includes(index)
+          ? "#e74c3c"
+          : "rgba(234, 14, 14, 0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "white",
+        border: "1px solid white",
+      }}
+    >
+      {selectedToDelete.includes(index) ? <Check size={16} /> : ""}
+    </div>
+  )}
+</div>
+          
           </div>
         ))}
       </div>
@@ -2270,6 +2271,124 @@ Loop Slideshow
     </div>
   );
 };
+
+// ==============================================
+// IMAGE RESIZE BEFORE UPLOAD
+// ==============================================
+
+/**
+ * Resize an image to specified dimensions while maintaining aspect ratio
+ * @param {string|Blob} src - Image source (URL or File)
+ * @param {Object} options - Resize options
+ * @param {number} options.maxWidth - Target width (e.g., 1080)
+ * @param {number} options.maxHeight - Target height (e.g., 1920) 
+ * @param {string} options.fit - Fit mode ('cover' or 'contain')
+ * @param {string} options.format - Output format ('jpeg' or 'png')
+ * @param {number} options.quality - JPEG quality (0-1)
+ * @returns {Promise<{dataUrl: string, width: number, height: number}>}
+ */
+const resizeImage = (src, options = {}) => {
+  const {
+    maxWidth = 1080,
+    maxHeight = 1920,
+    fit = 'cover',
+    format = 'jpeg',
+    quality = 0.9
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    
+    // Create object URL if src is a File/Blob
+    const objectUrl = src instanceof Blob ? URL.createObjectURL(src) : null;
+    
+    img.onload = () => {
+      // Calculate dimensions while maintaining aspect ratio
+      let targetWidth, targetHeight;
+      const imgRatio = img.width / img.height;
+      const targetRatio = maxWidth / maxHeight;
+      
+      if (fit === 'cover') {
+        // Cover: fill the entire space, cropping if needed
+        if (imgRatio > targetRatio) {
+          // Image is wider than target ratio, match height
+          targetHeight = maxHeight;
+          targetWidth = targetHeight * imgRatio;
+        } else {
+          // Image is taller than target ratio, match width
+          targetWidth = maxWidth;
+          targetHeight = targetWidth / imgRatio;
+        }
+      } else {
+        // Contain: ensure the entire image fits
+        if (imgRatio > targetRatio) {
+          // Image is wider than target ratio, match width
+          targetWidth = maxWidth;
+          targetHeight = targetWidth / imgRatio;
+        } else {
+          // Image is taller than target ratio, match height
+          targetHeight = maxHeight;
+          targetWidth = targetHeight * imgRatio;
+        }
+      }
+      
+      // Create canvas with target dimensions
+      const canvas = document.createElement('canvas');
+      canvas.width = fit === 'cover' ? maxWidth : targetWidth;
+      canvas.height = fit === 'cover' ? maxHeight : targetHeight;
+      
+      // Get context and draw image
+      const ctx = canvas.getContext('2d');
+      
+      // If using 'cover', we need to center the resized image
+      let drawX = 0, drawY = 0;
+      
+      if (fit === 'cover') {
+        drawX = (maxWidth - targetWidth) / 2;
+        drawY = (maxHeight - targetHeight) / 2;
+      }
+      
+      // Draw image
+      ctx.drawImage(img, drawX, drawY, targetWidth, targetHeight);
+      
+      // Convert to data URL
+      const dataUrl = canvas.toDataURL(`image/${format}`, quality);
+      
+      // Clean up object URL if created
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      
+      resolve({
+        dataUrl,
+        width: canvas.width,
+        height: canvas.height
+      });
+    };
+    
+    img.onerror = (e) => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to load image'));
+    };
+    
+    // Set source
+    img.src = objectUrl || src;
+  });
+};
+
+/**
+ * Create a small thumbnail version of an image
+ * @param {string|Blob} src - Image source
+ * @returns {Promise<string>} - Thumbnail data URL
+ */
+const createThumbnail = (src) => {
+  return resizeImage(src, {
+    maxWidth: 150,
+    maxHeight: 150,
+    fit: 'cover',
+    quality: 0.8
+  }).then(result => result.dataUrl);
+};
+
+
 //==============================================
 // STORY SLIDER COMPONENT - State & Handlers
 //==============================================
@@ -2414,114 +2533,142 @@ const StorySlider = () => {
   }, []);
 
   // Handle file uploads
-  // Modified handleFileUpload function with playback state handling
   const handleFileUpload = async (event) => {
-    // Add comprehensive logging
     console.log("File Upload Started", {
       musicUrlPresent: !!musicUrl,
       currentStoriesCount: stories.length,
       isCurrentlyPlaying: isPlaying,
     });
-
-    // IMPORTANT: If music is playing, pause it before adding images to prevent white screen bug
+  
+    // Pause playback if needed
     const wasPlaying = isPlaying;
     if (isPlaying) {
-      console.log(
-        "Pausing playback before adding images to prevent rendering issues"
-      );
-      // Call stopAutoRotation to properly clean up interval
+      console.log("Pausing playback before adding images to prevent rendering issues");
       stopAutoRotation();
-      // Pause audio if it exists
       if (audioRef.current) {
         audioRef.current.pause();
       }
-      // Update state
       setIsPlaying(false);
     }
-
+  
     const files = Array.from(event.target.files).filter((file) =>
       file.type.startsWith("image/")
     );
-
+  
     if (files.length === 0) {
       alert("Please select image files only.");
       return;
     }
-
+  
     // Check if adding these files would exceed the 25 photo limit
     const currentPhotoCount = stories.length;
     const remainingSlots = 25 - currentPhotoCount;
-
+  
     if (remainingSlots <= 0) {
-      alert(
-        "Maximum limit of 25 photos reached. Please remove some photos before adding more."
-      );
+      alert("Maximum limit of 25 photos reached. Please remove some photos before adding more.");
       return;
     }
-
+  
     if (files.length > remainingSlots) {
-      alert(
-        `Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`
-      );
+      alert(`Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`);
       files.slice(0, remainingSlots);
     }
-
-    // Process files one by one with base64 data (up to the limit)
+  
+    // Show a progress modal if there are many images
+    if (files.length > 3) {
+      setShowProgress(true);
+      setProgressMessage("Processing images...");
+      setSaveProgress(0);
+    }
+  
+    // Process files one by one with resizing
     const filesToProcess = files.slice(0, remainingSlots);
-    const newStories = await Promise.all(
-      filesToProcess.map(async (file) => {
-        // Read file as base64 data
-        const base64Data = await readFileAsBase64(file);
-
-        return {
+    const newStories = [];
+    
+    for (let i = 0; i < filesToProcess.length; i++) {
+      const file = filesToProcess[i];
+      
+      try {
+        // Update progress
+        if (files.length > 3) {
+          setSaveProgress((i / filesToProcess.length) * 100);
+          setProgressMessage(`Processing image ${i+1} of ${filesToProcess.length}...`);
+        }
+        
+        // Create display version (for slideshow UI)
+        const displayImage = await resizeImage(file, {
+          maxWidth: 1080,    // Adjust based on typical display size
+          maxHeight: 1920,
+          fit: 'contain',    // Preserve aspect ratio
+          quality: 0.85      // Good quality but smaller file size
+        });
+        
+        // Create export version (pre-scaled to 1080p for FFmpeg)
+        const exportImage = await resizeImage(file, {
+          maxWidth: 1080,
+          maxHeight: 1920,
+          fit: 'cover',      // Match your export settings
+          quality: 0.9       // Higher quality for export
+        });
+        
+        // Create thumbnail for edit panel
+        const thumbnailImage = await createThumbnail(file);
+        
+        // Create a URL for the display version
+        const displayBlob = await fetch(displayImage.dataUrl).then(r => r.blob());
+        const displayUrl = URL.createObjectURL(displayBlob);
+        
+        newStories.push({
           type: "image",
-          url: URL.createObjectURL(file),
+          url: displayUrl,                 // URL for display in slideshow
           originalName: file.name,
-          base64Data: base64Data,
-          dateAdded: new Date().toISOString(), // Add timestamp for tracking
-        };
-      })
-    );
-
-    // Force a complete reset of the component's view state
+          exportData: exportImage.dataUrl, // Pre-scaled for export (1080p)
+          thumbnailData: thumbnailImage,   // Small thumbnail for edit panel
+          dateAdded: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error(`Error processing image ${file.name}:`, error);
+      }
+    }
+  
+    // Update stories state
     setStories((prevStories) => {
       const updatedStories = [...prevStories, ...newStories];
-
-      // Add comprehensive logging
       console.log("Stories Update", {
         prevStoriesCount: prevStories.length,
         newStoriesCount: newStories.length,
         totalStoriesCount: updatedStories.length,
-        newStoriesUrls: newStories.map((story) => story.url),
       });
-
       return updatedStories;
     });
-
+  
+    // Hide progress if shown
+    if (files.length > 3) {
+      setShowProgress(false);
+    }
+  
     // Ensure we reset to the first image
     setCurrentIndex(0);
-
+  
     // Clear the file input
     event.target.value = "";
-
+  
     // Silent auto-save after adding images
     if (newStories.length > 0) {
       try {
         await handleSaveSessionToDb("auto_save_" + Date.now(), true);
-        console.log(
-          `Auto-save completed with ${newStories.length} total new images`
-        );
+        console.log(`Auto-save completed with ${newStories.length} total new images`);
       } catch (error) {
         console.error("Auto-save failed:", error);
       }
     }
-
-    // If music was playing before, restart playback after image processing is complete
+  
+    // Resume playback if needed
     if (wasPlaying && musicUrl) {
       console.log("Resuming playback after adding images");
       setTimeout(() => {
         handlePlayPause();
-      }, 500); // Small delay to ensure state is fully updated
+      }, 500);
     }
   };
 
@@ -2922,38 +3069,40 @@ const StorySlider = () => {
       for (let loop = 0; loop < loopCount; loop++) {
         for (let i = 0; i < stories.length; i++) {
           const story = stories[i];
-          setProgressMessage(
-            `Processing image ${i + 1}/${stories.length} (Loop ${
-              loop + 1
-            }/${loopCount})`
-          );
-
-          // Get image data from base64 if available, or fall back to URL
+          setProgressMessage(`Processing image ${i + 1}/${stories.length} (Loop ${loop + 1}/${loopCount})`);
+      
+          // Get image data from pre-scaled export version if available
           let imageData;
           try {
-            if (story.base64Data) {
-              // Use base64 data if available
+            if (story.exportData) {
+              // Use the pre-scaled export version (much faster)
+              const imageBlob = base64ToBlob(story.exportData);
+              imageData = new Uint8Array(await imageBlob.arrayBuffer());
+            } else if (story.base64Data) {
+              // Fall back to base64 data if available (from older uploads)
               const imageBlob = base64ToBlob(story.base64Data);
               imageData = new Uint8Array(await imageBlob.arrayBuffer());
             } else {
-              // Fall back to URL if needed
+              // Last resort: fetch from URL
               imageData = await fetchFile(story.url);
             }
           } catch (imageError) {
             console.error(`Error fetching image ${i + 1}:`, imageError);
-            throw new Error(
-              `Failed to process image ${
-                i + 1
-              }. Please check if all images are valid.`
-            );
+            throw new Error(`Failed to process image ${i + 1}. Please check if all images are valid.`);
           }
-
+      
           const inputName = `input_${loop}_${i}.png`;
           const outputName = `processed_${loop}_${i}.mp4`;
-
+      
           await ffmpeg.writeFile(inputName, imageData);
           tempFiles.push(inputName);
-
+      
+          // Since images are pre-scaled, we can simplify the FFmpeg command
+          // If using exportData, we don't need complex scaling filters
+          const scaleFilter = story.exportData 
+            ? "scale=iw:ih" // No scaling needed, keep as is
+            : getCoverFilterString(width, height, imageFitMode); // For backward compatibility
+      
           await ffmpeg.exec([
             "-loop",
             "1",
@@ -2966,22 +3115,24 @@ const StorySlider = () => {
             "-pix_fmt",
             "yuv420p",
             "-vf",
-            getCoverFilterString(width, height, imageFitMode),
+            scaleFilter,
             "-r",
             "30",
             "-preset",
             "ultrafast",
             outputName,
           ]);
+          
           tempFiles.push(outputName);
           processedFiles.push({ name: outputName });
+          
           // Update progress, accounting for multiple loops
           setSaveProgress(
-            ((loop * stories.length + i + 1) / (loopCount * stories.length)) *
-              75
+            ((loop * stories.length + i + 1) / (loopCount * stories.length)) * 75
           );
         }
       }
+
       // Write concatenation list
       await ffmpeg.writeFile(
         "list.txt",

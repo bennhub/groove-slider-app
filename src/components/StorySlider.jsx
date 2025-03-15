@@ -2582,11 +2582,13 @@ const StorySlider = () => {
     }
   
     // Process files one by one with resizing
-    const filesToProcess = files.slice(0, remainingSlots);
-    const newStories = [];
+    const processedFiles = [];
+    const tempFiles = [];
+    const [width, height] = resolution.split("x").map(Number);
     
-    for (let i = 0; i < filesToProcess.length; i++) {
-      const file = filesToProcess[i];
+    for (let i = 0; i < stories.length; i++) {
+      const story = stories[i];
+      setProgressMessage(`Processing image ${i + 1}/${stories.length}`);
       
       try {
         // Update progress

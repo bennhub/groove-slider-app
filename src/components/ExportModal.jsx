@@ -107,42 +107,44 @@ const ExportModal = ({
   };
 
   // Export handler
-  const handleExport = async () => {
-    if (exceedsMaxDuration) {
-      setExportError(
-        "Export duration exceeds the 3-minute limit. Please reduce loop count."
-      );
-      return;
-    }
+  // Export handler
+const handleExport = async () => {
+  if (exceedsMaxDuration) {
+    setExportError(
+      "Export duration exceeds the 3-minute limit. Please reduce loop count."
+    );
+    return;
+  }
 
-    setExportError(null);
+  setExportError(null);
 
-    // Stop playback if active
-    if (stopPlayback && typeof stopPlayback === "function") {
-      stopPlayback();
-    }
+  // Stop playback if active
+  if (stopPlayback && typeof stopPlayback === "function") {
+    stopPlayback();
+  }
 
-    const exportConfig = {
+  // CHANGE THIS PART:
+  const exportConfig = {
+    resolution,
+    isExportLoopEnabled,
+    exportLoopDuration: isExportLoopEnabled ? totalDuration : 0, // Use duration instead of count
+  };
+
+  try {
+    const exportData = {
+      storyData: storyData || stories,
       resolution,
       isExportLoopEnabled,
-      loopCount, // Use loop count instead of duration
+      exportLoopDuration: isExportLoopEnabled ? totalDuration : 0, // Change this line
     };
 
-    try {
-      const exportData = {
-        storyData: storyData || stories,
-        resolution,
-        isExportLoopEnabled,
-        loopCount, // Use loop count instead of duration
-      };
-
-      const exportedFile = await initiateExport(exportData, exportConfig);
-      onExport(exportedFile);
-    } catch (error) {
-      console.error("Export failed", error);
-      setExportError(error.message || "Export failed. Please try again.");
-    }
-  };
+    const exportedFile = await initiateExport(exportData, exportConfig);
+    onExport(exportedFile);
+  } catch (error) {
+    console.error("Export failed", error);
+    setExportError(error.message || "Export failed. Please try again.");
+  }
+};
 
   if (!isOpen) return null;
 

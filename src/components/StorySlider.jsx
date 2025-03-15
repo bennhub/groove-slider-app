@@ -476,7 +476,7 @@ const MusicPanel = ({
     }
   }, [audioRef, controlsRef, isPlaying]);
 
-  // Updated handlePlayPause function 
+  // Updated handlePlayPause function
   const handlePlayPause = () => {
     // If currently playing, stop everything
     if (isPlaying) {
@@ -760,70 +760,70 @@ const MusicPanel = ({
             />
           </label>*/}
           {/* New Audius Tracks Button */}
-<button
-  onClick={() => setIsAudiusModalOpen(true)}
-  style={{
-    background: "#6c0d9c",
-    color: "white",
-    border: "solid 2px #fbf8cd",
-    padding: "10px",
-    borderRadius: "5px",
-    display: "flex",
-    alignItems: "center",
-    textAlign: "left",
-    gap: "10px",
-  }}
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-  >
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-12.5v9l6-4.5z" />
-  </svg>
-  Find Music
-</button>
+          <button
+            onClick={() => setIsAudiusModalOpen(true)}
+            style={{
+              background: "#6c0d9c",
+              color: "white",
+              border: "solid 2px #fbf8cd",
+              padding: "10px",
+              borderRadius: "5px",
+              display: "flex",
+              alignItems: "center",
+              textAlign: "left",
+              gap: "10px",
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-12.5v9l6-4.5z" />
+            </svg>
+            Find Music
+          </button>
 
-{/* Audius Tracks Modal - Simplified */}
-{isAudiusModalOpen && (
-  <AudiusTrackSearch 
-    onTrackSelect={(track) => {
-      try {
-        // The track object should have a streamUrl property
-        if (!track.streamUrl) {
-          throw new Error("Track doesn't have a streamUrl");
-        }
+          {/* Audius Tracks Modal - Simplified */}
+          {isAudiusModalOpen && (
+            <AudiusTrackSearch
+              onTrackSelect={(track) => {
+                try {
+                  // The track object should have a streamUrl property
+                  if (!track.streamUrl) {
+                    throw new Error("Track doesn't have a streamUrl");
+                  }
 
-        // Set the music URL
-        onUpload(track.streamUrl);
+                  // Set the music URL
+                  onUpload(track.streamUrl);
 
-        // Use the BPM from the track if available, otherwise default to 120
-        const trackBPM = track.bpm || 120;
-        console.log(`Using track BPM: ${trackBPM}`);
-        onBPMChange(trackBPM);
+                  // Use the BPM from the track if available, otherwise default to 120
+                  const trackBPM = track.bpm || 120;
+                  console.log(`Using track BPM: ${trackBPM}`);
+                  onBPMChange(trackBPM);
 
-        // Reset start point to beginning
-        onStartPointChange(0);
+                  // Reset start point to beginning
+                  onStartPointChange(0);
 
-        // Reset audio state
-        if (controlsRef.current) {
-          controlsRef.current.src = track.streamUrl;
-          controlsRef.current.currentTime = 0;
-        }
+                  // Reset audio state
+                  if (controlsRef.current) {
+                    controlsRef.current.src = track.streamUrl;
+                    controlsRef.current.currentTime = 0;
+                  }
 
-        // Close the modal
-        setIsAudiusModalOpen(false);
-      } catch (error) {
-        console.error("Error selecting Audius track:", error);
-        alert("Unable to play this track. Please try another one.");
-      }
-    }}
-    onClose={() => setIsAudiusModalOpen(false)}
-  />
-)}
-</div>
+                  // Close the modal
+                  setIsAudiusModalOpen(false);
+                } catch (error) {
+                  console.error("Error selecting Audius track:", error);
+                  alert("Unable to play this track. Please try another one.");
+                }
+              }}
+              onClose={() => setIsAudiusModalOpen(false)}
+            />
+          )}
+        </div>
 
         <div className="music-player">
           <audio
@@ -1513,14 +1513,14 @@ const EditPanel = ({
 }) => {
   // Mode state
   const [mode, setMode] = useState("view"); // "view", "reorder", "delete"
-  
+
   // For reorder mode
   const [selectedIndices, setSelectedIndices] = useState([]);
   const [tempOrder, setTempOrder] = useState([]);
-  
+
   // For delete mode
   const [selectedToDelete, setSelectedToDelete] = useState([]);
-  
+
   // Initialize tempOrder with existing stories when entering reorder mode
   useEffect(() => {
     if (mode === "reorder") {
@@ -1549,10 +1549,10 @@ const EditPanel = ({
   // Handle photo selection in reorder mode
   const handlePhotoSelectForReorder = (index) => {
     if (mode !== "reorder") return;
-    
+
     // Check if already in selected indices
     const indexInSelection = selectedIndices.indexOf(index);
-    
+
     if (indexInSelection !== -1) {
       // If already selected, remove it
       const newSelectedIndices = [...selectedIndices];
@@ -1562,23 +1562,23 @@ const EditPanel = ({
       // If not selected, add it to the end
       setSelectedIndices([...selectedIndices, index]);
     }
-    
+
     console.log("Updated selection:", {
       selectedIndices: [...selectedIndices, index].join(", "),
-      index
+      index,
     });
   };
 
   // Handle photo selection in delete mode
   const handlePhotoSelectForDelete = (index) => {
     if (mode !== "delete") return;
-    
+
     // Check if already selected for deletion
     const isSelected = selectedToDelete.includes(index);
-    
+
     if (isSelected) {
       // If already selected, remove it
-      setSelectedToDelete(selectedToDelete.filter(idx => idx !== index));
+      setSelectedToDelete(selectedToDelete.filter((idx) => idx !== index));
     } else {
       // If not selected, add it
       setSelectedToDelete([...selectedToDelete, index]);
@@ -1592,32 +1592,32 @@ const EditPanel = ({
       setMode("view");
       return;
     }
-    
+
     // Create a new ordered array based on the selected indices
     let newOrder = [];
-    
+
     // First add all selected stories in the order they were selected
     for (let i = 0; i < selectedIndices.length; i++) {
       const storyIndex = selectedIndices[i];
       newOrder.push(stories[storyIndex]);
     }
-    
+
     // Then add all unselected stories to the end
     for (let i = 0; i < stories.length; i++) {
       if (!selectedIndices.includes(i)) {
         newOrder.push(stories[i]);
       }
     }
-    
+
     console.log("Reordering stories:", {
-      originalOrder: stories.map(s => s.url),
-      newOrder: newOrder.map(s => s.url),
-      selectedIndices
+      originalOrder: stories.map((s) => s.url),
+      newOrder: newOrder.map((s) => s.url),
+      selectedIndices,
     });
-    
+
     // Apply the reordering
     onReorder(newOrder);
-    
+
     // Reset and go back to view mode
     setSelectedIndices([]);
     setMode("view");
@@ -1630,20 +1630,20 @@ const EditPanel = ({
       setMode("view");
       return;
     }
-    
+
     // Sort indices in descending order to avoid index shifts during deletion
     const sortedIndices = [...selectedToDelete].sort((a, b) => b - a);
-    
+
     // Create a new stories array by deleting selected items
     let newStories = [...stories];
     for (const index of sortedIndices) {
       newStories.splice(index, 1);
     }
-    
+
     // Apply the deletion
     onReorder(newStories);
     setMode("view");
-    
+
     // Clear selection
     setSelectedToDelete([]);
   };
@@ -1661,19 +1661,22 @@ const EditPanel = ({
   return (
     <div className="edit-panel">
       {/* Header with mode-specific content */}
-      <div className="edit-panel-header" style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "10px 15px",
-        backgroundColor: "#1a1a1a",
-        borderBottom: "1px solid rgba(255,255,255,0.1)"
-      }}>
+      <div
+        className="edit-panel-header"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "10px 15px",
+          backgroundColor: "#1a1a1a",
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
+        }}
+      >
         {mode === "view" ? (
           <>
             <h3 style={{ margin: 0 }}>Edit Photos</h3>
             <div style={{ display: "flex", gap: "15px" }}>
-              <button 
+              <button
                 className="mode-button"
                 onClick={handleEnterReorderMode}
                 style={{
@@ -1686,15 +1689,20 @@ const EditPanel = ({
                   gap: "5px",
                   padding: "5px 10px",
                   borderRadius: "5px",
-                  transition: "background-color 0.2s"
+                  transition: "background-color 0.2s",
                 }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    "rgba(255,255,255,0.1)")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
               >
                 <MoveVertical size={18} />
                 <span>Reorder</span>
               </button>
-              <button 
+              <button
                 className="mode-button"
                 onClick={handleEnterDeleteMode}
                 style={{
@@ -1707,15 +1715,20 @@ const EditPanel = ({
                   gap: "5px",
                   padding: "5px 10px",
                   borderRadius: "5px",
-                  transition: "background-color 0.2s"
+                  transition: "background-color 0.2s",
                 }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    "rgba(255,255,255,0.1)")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
               >
                 <Trash2 size={18} />
                 <span>Delete</span>
               </button>
-              <button 
+              <button
                 className="close-button"
                 onClick={onClose}
                 style={{
@@ -1728,10 +1741,15 @@ const EditPanel = ({
                   justifyContent: "center",
                   width: "30px",
                   height: "30px",
-                  borderRadius: "50%"
+                  borderRadius: "50%",
                 }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    "rgba(255,255,255,0.1)")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
               >
                 <X size={20} />
               </button>
@@ -1740,7 +1758,7 @@ const EditPanel = ({
         ) : mode === "reorder" ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <button 
+              <button
                 onClick={handleBack}
                 style={{
                   background: "none",
@@ -1752,17 +1770,22 @@ const EditPanel = ({
                   justifyContent: "center",
                   width: "30px",
                   height: "30px",
-                  borderRadius: "50%"
+                  borderRadius: "50%",
                 }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    "rgba(255,255,255,0.1)")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
               >
                 <X size={20} />
               </button>
               <h3 style={{ margin: 0 }}>Reorder Photos</h3>
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button 
+              <button
                 onClick={handleCancel}
                 style={{
                   background: "none",
@@ -1770,12 +1793,12 @@ const EditPanel = ({
                   color: "white",
                   cursor: "pointer",
                   padding: "5px 15px",
-                  borderRadius: "5px"
+                  borderRadius: "5px",
                 }}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleApplyReorder}
                 style={{
                   backgroundColor: "#6c0d9c",
@@ -1784,7 +1807,7 @@ const EditPanel = ({
                   cursor: "pointer",
                   padding: "5px 15px",
                   borderRadius: "5px",
-                  opacity: selectedIndices.length > 0 ? 1 : 0.5
+                  opacity: selectedIndices.length > 0 ? 1 : 0.5,
                 }}
                 disabled={selectedIndices.length === 0}
               >
@@ -1795,7 +1818,7 @@ const EditPanel = ({
         ) : mode === "delete" ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <button 
+              <button
                 onClick={handleBack}
                 style={{
                   background: "none",
@@ -1807,21 +1830,26 @@ const EditPanel = ({
                   justifyContent: "center",
                   width: "30px",
                   height: "30px",
-                  borderRadius: "50%"
+                  borderRadius: "50%",
                 }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    "rgba(255,255,255,0.1)")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
               >
                 <X size={20} />
               </button>
               <h3 style={{ margin: 0 }}>
-                {selectedToDelete.length === 0 
-                  ? "Select Photos to Delete" 
+                {selectedToDelete.length === 0
+                  ? "Select Photos to Delete"
                   : `${selectedToDelete.length} Selected`}
               </h3>
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button 
+              <button
                 onClick={handleCancel}
                 style={{
                   background: "none",
@@ -1829,12 +1857,12 @@ const EditPanel = ({
                   color: "white",
                   cursor: "pointer",
                   padding: "5px 15px",
-                  borderRadius: "5px"
+                  borderRadius: "5px",
                 }}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleApplyDelete}
                 style={{
                   backgroundColor: "#e74c3c",
@@ -1843,7 +1871,7 @@ const EditPanel = ({
                   cursor: "pointer",
                   padding: "5px 15px",
                   borderRadius: "5px",
-                  opacity: selectedToDelete.length > 0 ? 1 : 0.5
+                  opacity: selectedToDelete.length > 0 ? 1 : 0.5,
                 }}
                 disabled={selectedToDelete.length === 0}
               >
@@ -1853,48 +1881,59 @@ const EditPanel = ({
           </>
         ) : null}
       </div>
-      
+
       {/* Instructions */}
       {mode === "reorder" && (
-        <div style={{
-          padding: "10px 15px",
-          backgroundColor: "rgba(108, 13, 156, 0.2)",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
-          fontSize: "14px",
-          textAlign: "center"
-        }}>
+        <div
+          style={{
+            padding: "10px 15px",
+            backgroundColor: "rgba(108, 13, 156, 0.2)",
+            borderBottom: "1px solid rgba(255,255,255,0.1)",
+            fontSize: "14px",
+            textAlign: "center",
+          }}
+        >
           Select photos in the order you want them to appear
         </div>
       )}
-      
+
       {mode === "delete" && (
-        <div style={{
-          padding: "10px 15px",
-          backgroundColor: "rgba(231, 76, 60, 0.2)",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
-          fontSize: "14px",
-          textAlign: "center"
-        }}>
+        <div
+          style={{
+            padding: "10px 15px",
+            backgroundColor: "rgba(231, 76, 60, 0.2)",
+            borderBottom: "1px solid rgba(255,255,255,0.1)",
+            fontSize: "14px",
+            textAlign: "center",
+          }}
+        >
           Select photos you want to delete
         </div>
       )}
 
       {/* Thumbnails grid */}
-      <div className="thumbnails-container" style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-        gap: "10px",
-        padding: "15px",
-        overflowY: "auto",
-        maxHeight: "70vh"
-      }}>
+      <div
+        className="thumbnails-container"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+          gap: "10px",
+          padding: "15px",
+          overflowY: "auto",
+          maxHeight: "70vh",
+        }}
+      >
         {stories.map((story, index) => (
           <div
             key={index}
             className={`thumbnail ${
-              mode === "reorder" && selectedIndices.includes(index) ? "selected" : ""
+              mode === "reorder" && selectedIndices.includes(index)
+                ? "selected"
+                : ""
             } ${
-              mode === "delete" && selectedToDelete.includes(index) ? "selected-delete" : ""
+              mode === "delete" && selectedToDelete.includes(index)
+                ? "selected-delete"
+                : ""
             }`}
             onClick={() => {
               if (mode === "reorder") {
@@ -1908,13 +1947,14 @@ const EditPanel = ({
               cursor: "pointer",
               borderRadius: "8px",
               overflow: "hidden",
-              border: mode === "delete" && selectedToDelete.includes(index)
-                ? "2px solid #e74c3c"
-                : mode === "reorder" && selectedIndices.includes(index)
-                ? "2px solid #6c0d9c"
-                : "2px solid transparent",
+              border:
+                mode === "delete" && selectedToDelete.includes(index)
+                  ? "2px solid #e74c3c"
+                  : mode === "reorder" && selectedIndices.includes(index)
+                  ? "2px solid #6c0d9c"
+                  : "2px solid transparent",
               transition: "transform 0.2s, box-shadow 0.2s, border 0.2s",
-              aspectRatio: "1/1"
+              aspectRatio: "1/1",
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = "scale(1.03)";
@@ -1926,68 +1966,72 @@ const EditPanel = ({
             }}
           >
             {/* Photo thumbnail */}
-            <div style={{
-              position: "relative",
-              width: "100%",
-              height: "100%"
-            }}>
-              <img 
-                src={story.url} 
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              <img
+                src={story.url}
                 alt={`Slide ${index + 1}`}
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover"
+                  objectFit: "cover",
                 }}
               />
-              
+
               {/* Number indicator for reorder mode */}
               {mode === "reorder" && (
-                <div style={{
-                  position: "absolute",
-                  top: "5px",
-                  right: "5px",
-                  width: "25px",
-                  height: "25px",
-                  borderRadius: "50%",
-                  backgroundColor: selectedIndices.includes(index) 
-                    ? "#6c0d9c" 
-                    : "rgb(22, 50, 207)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: selectedIndices.includes(index) ? "white" : "#000",
-                  fontWeight: "bold",
-                  fontSize: "14px",
-                  border: "1px solid white"
-                }}>
-                  {selectedIndices.includes(index) 
-                    ? selectedIndices.indexOf(index) + 1 
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "5px",
+                    right: "5px",
+                    width: "25px",
+                    height: "25px",
+                    borderRadius: "50%",
+                    backgroundColor: selectedIndices.includes(index)
+                      ? "#6c0d9c"
+                      : "rgb(22, 50, 207)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: selectedIndices.includes(index) ? "white" : "#000",
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                    border: "1px solid white",
+                  }}
+                >
+                  {selectedIndices.includes(index)
+                    ? selectedIndices.indexOf(index) + 1
                     : ""}
                 </div>
               )}
-              
+
               {/* Checkmark indicator for delete mode */}
               {mode === "delete" && (
-                <div style={{
-                  position: "absolute",
-                  top: "5px",
-                  right: "5px",
-                  width: "25px",
-                  height: "25px",
-                  borderRadius: "50%",
-                  backgroundColor: selectedToDelete.includes(index) 
-                    ? "#e74c3c" 
-                    : "rgba(234, 14, 14, 0.5)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  border: "1px solid white"
-                }}>
-                  {selectedToDelete.includes(index) 
-                    ? <Check size={16} />
-                    : ""}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "5px",
+                    right: "5px",
+                    width: "25px",
+                    height: "25px",
+                    borderRadius: "50%",
+                    backgroundColor: selectedToDelete.includes(index)
+                      ? "#e74c3c"
+                      : "rgba(234, 14, 14, 0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    border: "1px solid white",
+                  }}
+                >
+                  {selectedToDelete.includes(index) ? <Check size={16} /> : ""}
                 </div>
               )}
             </div>
@@ -2273,6 +2317,20 @@ const StorySlider = () => {
   // audius
   const [isAudiusModalOpen, setIsAudiusModalOpen] = useState(false);
 
+  // Stop playback when exproting
+  const stopPlayback = () => {
+    // Stop auto-rotation slideshow
+    if (isPlaying) {
+      stopAutoRotation();
+      setIsPlaying(false);
+    }
+
+    // Stop music if playing
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+  };
+
   // save edit panel
   const saveStateOnEditPanelToggle = async (isOpen) => {
     try {
@@ -2357,113 +2415,115 @@ const StorySlider = () => {
 
   // Handle file uploads
   // Modified handleFileUpload function with playback state handling
-const handleFileUpload = async (event) => {
-  // Add comprehensive logging
-  console.log("File Upload Started", {
-    musicUrlPresent: !!musicUrl,
-    currentStoriesCount: stories.length,
-    isCurrentlyPlaying: isPlaying
-  });
-
-  // IMPORTANT: If music is playing, pause it before adding images to prevent white screen bug
-  const wasPlaying = isPlaying;
-  if (isPlaying) {
-    console.log("Pausing playback before adding images to prevent rendering issues");
-    // Call stopAutoRotation to properly clean up interval
-    stopAutoRotation();
-    // Pause audio if it exists
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-    // Update state
-    setIsPlaying(false);
-  }
-
-  const files = Array.from(event.target.files).filter((file) =>
-    file.type.startsWith("image/")
-  );
-
-  if (files.length === 0) {
-    alert("Please select image files only.");
-    return;
-  }
-
-  // Check if adding these files would exceed the 25 photo limit
-  const currentPhotoCount = stories.length;
-  const remainingSlots = 25 - currentPhotoCount;
-
-  if (remainingSlots <= 0) {
-    alert(
-      "Maximum limit of 25 photos reached. Please remove some photos before adding more."
-    );
-    return;
-  }
-
-  if (files.length > remainingSlots) {
-    alert(
-      `Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`
-    );
-    files.slice(0, remainingSlots);
-  }
-
-  // Process files one by one with base64 data (up to the limit)
-  const filesToProcess = files.slice(0, remainingSlots);
-  const newStories = await Promise.all(
-    filesToProcess.map(async (file) => {
-      // Read file as base64 data
-      const base64Data = await readFileAsBase64(file);
-
-      return {
-        type: "image",
-        url: URL.createObjectURL(file),
-        originalName: file.name,
-        base64Data: base64Data,
-        dateAdded: new Date().toISOString(), // Add timestamp for tracking
-      };
-    })
-  );
-
-  // Force a complete reset of the component's view state
-  setStories((prevStories) => {
-    const updatedStories = [...prevStories, ...newStories];
-    
+  const handleFileUpload = async (event) => {
     // Add comprehensive logging
-    console.log("Stories Update", {
-      prevStoriesCount: prevStories.length,
-      newStoriesCount: newStories.length,
-      totalStoriesCount: updatedStories.length,
-      newStoriesUrls: newStories.map(story => story.url)
+    console.log("File Upload Started", {
+      musicUrlPresent: !!musicUrl,
+      currentStoriesCount: stories.length,
+      isCurrentlyPlaying: isPlaying,
     });
 
-    return updatedStories;
-  });
-
-  // Ensure we reset to the first image
-  setCurrentIndex(0);
-
-  // Clear the file input
-  event.target.value = "";
-
-  // Silent auto-save after adding images
-  if (newStories.length > 0) {
-    try {
-      await handleSaveSessionToDb("auto_save_" + Date.now(), true);
+    // IMPORTANT: If music is playing, pause it before adding images to prevent white screen bug
+    const wasPlaying = isPlaying;
+    if (isPlaying) {
       console.log(
-        `Auto-save completed with ${newStories.length} total new images`
+        "Pausing playback before adding images to prevent rendering issues"
       );
-    } catch (error) {
-      console.error("Auto-save failed:", error);
+      // Call stopAutoRotation to properly clean up interval
+      stopAutoRotation();
+      // Pause audio if it exists
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      // Update state
+      setIsPlaying(false);
     }
-  }
 
-  // If music was playing before, restart playback after image processing is complete
-  if (wasPlaying && musicUrl) {
-    console.log("Resuming playback after adding images");
-    setTimeout(() => {
-      handlePlayPause();
-    }, 500); // Small delay to ensure state is fully updated
-  }
-};
+    const files = Array.from(event.target.files).filter((file) =>
+      file.type.startsWith("image/")
+    );
+
+    if (files.length === 0) {
+      alert("Please select image files only.");
+      return;
+    }
+
+    // Check if adding these files would exceed the 25 photo limit
+    const currentPhotoCount = stories.length;
+    const remainingSlots = 25 - currentPhotoCount;
+
+    if (remainingSlots <= 0) {
+      alert(
+        "Maximum limit of 25 photos reached. Please remove some photos before adding more."
+      );
+      return;
+    }
+
+    if (files.length > remainingSlots) {
+      alert(
+        `Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`
+      );
+      files.slice(0, remainingSlots);
+    }
+
+    // Process files one by one with base64 data (up to the limit)
+    const filesToProcess = files.slice(0, remainingSlots);
+    const newStories = await Promise.all(
+      filesToProcess.map(async (file) => {
+        // Read file as base64 data
+        const base64Data = await readFileAsBase64(file);
+
+        return {
+          type: "image",
+          url: URL.createObjectURL(file),
+          originalName: file.name,
+          base64Data: base64Data,
+          dateAdded: new Date().toISOString(), // Add timestamp for tracking
+        };
+      })
+    );
+
+    // Force a complete reset of the component's view state
+    setStories((prevStories) => {
+      const updatedStories = [...prevStories, ...newStories];
+
+      // Add comprehensive logging
+      console.log("Stories Update", {
+        prevStoriesCount: prevStories.length,
+        newStoriesCount: newStories.length,
+        totalStoriesCount: updatedStories.length,
+        newStoriesUrls: newStories.map((story) => story.url),
+      });
+
+      return updatedStories;
+    });
+
+    // Ensure we reset to the first image
+    setCurrentIndex(0);
+
+    // Clear the file input
+    event.target.value = "";
+
+    // Silent auto-save after adding images
+    if (newStories.length > 0) {
+      try {
+        await handleSaveSessionToDb("auto_save_" + Date.now(), true);
+        console.log(
+          `Auto-save completed with ${newStories.length} total new images`
+        );
+      } catch (error) {
+        console.error("Auto-save failed:", error);
+      }
+    }
+
+    // If music was playing before, restart playback after image processing is complete
+    if (wasPlaying && musicUrl) {
+      console.log("Resuming playback after adding images");
+      setTimeout(() => {
+        handlePlayPause();
+      }, 500); // Small delay to ensure state is fully updated
+    }
+  };
 
   // Helper to read file as base64
   const readFileAsBase64 = (file) => {
@@ -2610,13 +2670,12 @@ const handleFileUpload = async (event) => {
     }
   };
 
-
   //stroy states
   useEffect(() => {
     console.log("Stories State Changed", {
       storiesCount: stories.length,
       currentIndex,
-      musicUrlPresent: !!musicUrl
+      musicUrlPresent: !!musicUrl,
     });
   }, [stories, currentIndex, musicUrl]);
 
@@ -3163,10 +3222,10 @@ const handleFileUpload = async (event) => {
               <div className="title-bar">
                 <h1 className="slider-title">Groove Slider</h1>
                 <div className="photo-counter">
-                <span className={stories.length >= 25 ? "max-reached" : ""}>
-    {/* Add the image icon with desired size */}
-    {stories.length} / 25  <Images size={25} />
-  </span>
+                  <span className={stories.length >= 25 ? "max-reached" : ""}>
+                    {/* Add the image icon with desired size */}
+                    {stories.length} / 25 <Images size={25} />
+                  </span>
                 </div>
                 <button
                   onClick={() => setShowLanding(true)}
@@ -3330,11 +3389,18 @@ const handleFileUpload = async (event) => {
                
               <ExportModal
                 isOpen={showExportModal}
-                progress={saveProgress}
-                message={progressMessage}
                 onClose={() => setShowExportModal(false)}
                 onExport={handleSaveSession}
                 isExporting={isExporting}
+                progress={saveProgress}
+                message={progressMessage}
+                stories={stories}
+                duration={duration}
+                stopPlayback={stopPlayback}
+                cancelExport={() => {
+                  setIsExporting(false);
+                  setShowExportModal(false);
+                }}
               />
                
               <SaveSessionModal

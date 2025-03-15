@@ -1501,7 +1501,6 @@ img {
   margin-top: var(--spacing-md);
 }
 .duration-info span {
-  color: var(--color-accent);
   font-size: 20px;
   font-family: var(--font-family-primary);
 }
@@ -2331,6 +2330,7 @@ img {
 }
 .projects-button:hover {
   background-color: var(--accent-hover-color, #ffb84d89);
+
 }
 /* Export Progress Styles */
 .export-progress {
@@ -2428,6 +2428,141 @@ img {
   display: flex;
   align-items: center;
   gap: 5px;
+}
+
+/* Additional CSS for the new Export Modal features */
+
+.export-note {
+  color: #aaa;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+.cancel-export-button {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 10px;
+  z-index: 10000;
+}
+
+.cancel-export-button:hover {
+  background-color: #c0392b;
+}
+
+.duration-info {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  padding: 15px;
+  margin: 15px 0;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-value {
+  font-weight: 500;
+  color: #ffffff;
+  padding-left: 10px;
+}
+
+.duration-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e74c3c;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+.loop-control {
+  margin-top: 10px;
+  margin-left: 25px;
+}
+
+.loop-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-bottom: 30px;
+}
+
+.counter-button {
+  width: 30px;
+  height: 30px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 1.2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.counter-button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.counter-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loop-count-input {
+  width: 50px;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 5px;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.loop-unit {
+  font-size: 1.1rem;
+  margin-left: 2px;
+  display: none;
+}
+
+.loop-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f39c12;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.export-error-message {
+  background-color: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 /* ================= RESPONSIVE MEDIA QUERIES ================= */
 /* Mobile Styles - Default, up to 480px */

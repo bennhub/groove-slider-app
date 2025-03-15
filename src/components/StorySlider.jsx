@@ -1913,133 +1913,119 @@ const EditPanel = ({
 
       {/* Thumbnails grid */}
       <div
-        className="thumbnails-container"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-          gap: "10px",
-          padding: "15px",
-          overflowY: "auto",
-          maxHeight: "70vh",
-        }}
-      >
-        {stories.map((story, index) => (
-          <div
-            key={index}
-            className={`thumbnail ${
-              mode === "reorder" && selectedIndices.includes(index)
-                ? "selected"
-                : ""
-            } ${
-              mode === "delete" && selectedToDelete.includes(index)
-                ? "selected-delete"
-                : ""
-            }`}
-            onClick={() => {
-              if (mode === "reorder") {
-                handlePhotoSelectForReorder(index);
-              } else if (mode === "delete") {
-                handlePhotoSelectForDelete(index);
-              }
-            }}
-            style={{
-              position: "relative",
-              cursor: "pointer",
-              borderRadius: "8px",
-              overflow: "hidden",
-              border:
-                mode === "delete" && selectedToDelete.includes(index)
-                  ? "2px solid #e74c3c"
-                  : mode === "reorder" && selectedIndices.includes(index)
-                  ? "2px solid #6c0d9c"
-                  : "2px solid transparent",
-              transition: "transform 0.2s, box-shadow 0.2s, border 0.2s",
-              aspectRatio: "1/1",
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = "scale(1.03)";
-              e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.3)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          >
-            {/* Photo thumbnail */}
-<div
+  className="thumbnails-container"
   style={{
-    position: "relative",
-    width: "100%",
-    height: "100%",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+    gap: "10px",
+    padding: "15px",
+    overflowY: "auto",
+    maxHeight: "70vh",
+    WebkitOverflowScrolling: "touch",
+    touchAction: "pan-y",
   }}
 >
-  <img
-    src={story.thumbnailData || story.url} // Use thumbnail if available, fall back to url
-    alt={`Slide ${index + 1}`}
-    style={{
-      width: "100%",
-      height: "100%",
-      objectFit: "cover",
-    }}
-  />
+  {stories.map((story, index) => {
+    const isSelected = selectedIndices.includes(index);
+    const selectionOrder = isSelected ? selectedIndices.indexOf(index) + 1 : null;
 
-  {/* Number indicator for reorder mode */}
-  {mode === "reorder" && (
-    <div
-      style={{
-        position: "absolute",
-        top: "5px",
-        right: "5px",
-        width: "25px",
-        height: "25px",
-        borderRadius: "50%",
-        backgroundColor: selectedIndices.includes(index)
-          ? "#6c0d9c"
-          : "rgb(22, 50, 207)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: selectedIndices.includes(index) ? "white" : "#000",
-        fontWeight: "bold",
-        fontSize: "14px",
-        border: "1px solid white",
-      }}
-    >
-      {selectedIndices.includes(index)
-        ? selectedIndices.indexOf(index) + 1
-        : ""}
-    </div>
-  )}
+    return (
+      <div
+        key={index}
+        onClick={() => {
+          if (mode === "reorder") {
+            handlePhotoSelectForReorder(index);
+          } else if (mode === "delete") {
+            handlePhotoSelectForDelete(index);
+          }
+        }}
+        style={{
+          position: "relative",
+          cursor: "pointer",
+          borderRadius: "8px",
+          overflow: "hidden",
+          border: isSelected 
+            ? "2px solid #6c0d9c" 
+            : "2px solid transparent",
+          transition: "transform 0.2s, box-shadow 0.2s, border 0.2s",
+          aspectRatio: "1/1",
+          width: "100%",
+          height: "100%",
+          padding: "2px",
+          backgroundColor: "white",
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            overflow: "hidden",
+          }}
+        >
+          <img
+            src={story.thumbnailData || story.url}
+            alt={`Slide ${index + 1}`}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              borderRadius: "6px",
+            }}
+          />
 
-  {/* Checkmark indicator for delete mode */}
-  {mode === "delete" && (
-    <div
-      style={{
-        position: "absolute",
-        top: "5px",
-        right: "5px",
-        width: "25px",
-        height: "25px",
-        borderRadius: "50%",
-        backgroundColor: selectedToDelete.includes(index)
-          ? "#e74c3c"
-          : "rgba(234, 14, 14, 0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "white",
-        border: "1px solid white",
-      }}
-    >
-      {selectedToDelete.includes(index) ? <Check size={16} /> : ""}
-    </div>
-  )}
-</div>
-          
-          </div>
-        ))}
+          {/* Reorder mode indicator */}
+          {mode === "reorder" && (
+            <div
+              style={{
+                position: "absolute",
+                top: "5px",
+                right: "5px",
+                width: "25px",
+                height: "25px",
+                borderRadius: "50%",
+                backgroundColor: isSelected ? "#6c0d9c" : "rgba(255,255,255,0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontWeight: "bold",
+                fontSize: "14px",
+                border: "1px solid white",
+              }}
+            >
+              {isSelected ? selectionOrder : ""}
+            </div>
+          )}
+
+          {/* Delete mode indicator */}
+          {mode === "delete" && selectedToDelete.includes(index) && (
+            <div
+              style={{
+                position: "absolute",
+                top: "5px",
+                right: "5px",
+                width: "25px",
+                height: "25px",
+                borderRadius: "50%",
+                backgroundColor: "#e74c3c",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                border: "1px solid white",
+              }}
+            >
+              <Check size={16} />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    );
+  })}
+</div>
+</div>
+   
   );
 };
 //==============================================

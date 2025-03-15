@@ -83,6 +83,8 @@ img {
   max-width: 100%;
   height: auto;
 }
+
+
 /* Containers and Layout */
 .app-container {
   display: flex;
@@ -1222,7 +1224,11 @@ img {
   z-index: var(--z-index-menu);
   overflow-y: auto;
   max-height: 70vh;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
 }
+
+  
 
 .edit-panel-header {
   display: flex;
@@ -1278,11 +1284,7 @@ img {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 2;
 }
-.thumbnail.drag-over {
-  transform: scale(1.05);
-  box-shadow: 0 0 0 2px #007aff;
-  position: relative;
-}
+
 .thumbnail.drag-over::after {
   content: "";
   position: absolute;

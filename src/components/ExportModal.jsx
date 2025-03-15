@@ -182,6 +182,12 @@ const handleExport = async () => {
                   </span>
                 </div>
               )}
+              
+              <div className="info-row">
+  <span style={{ fontSize: "0.90em", color: "orange" }}>
+    Note: Max slideshow duration is 3 mins.
+  </span>
+</div>
 
               {exceedsMaxDuration && (
                 <div className="duration-warning">

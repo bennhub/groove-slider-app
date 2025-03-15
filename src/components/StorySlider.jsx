@@ -2999,221 +2999,224 @@ const StorySlider = () => {
     }
   };
   // Export functionality
-  const handleSaveSession = async (exportSettings) => {
-    const finalExportSettings = {
-      ...exportSettings,
-      imageFitMode: imageFitMode, // Add this to your export settings
-    };
-    // Destructure export settings with default values
-    const {
-      resolution = "1080x1920",
-      isExportLoopEnabled = false,
-      exportLoopDuration = 0,
-    } = finalExportSettings;
-    try {
-      let fileHandle;
-      let fileName = "untitled.mp4";
-      // Existing file handle logic remains the same
-      if (!("showSaveFilePicker" in window)) {
-        const link = document.createElement("a");
-        link.download = fileName;
-        fileHandle = {
-          createWritable: async () => {
-            return {
-              write: async (data) => {
-                const url = URL.createObjectURL(
-                  new Blob([data], { type: "video/mp4" })
-                );
-                link.href = url;
-                link.click();
-                URL.revokeObjectURL(url);
-              },
-              close: async () => {},
-            };
-          },
-        };
-      } else {
-        fileHandle = await window.showSaveFilePicker({
-          suggestedName: fileName,
-          types: [
-            { description: "MP4 Video", accept: { "video/mp4": [".mp4"] } },
-          ],
-        });
-      }
-      setIsExporting(true);
-      setShowProgress(true);
-      setProgressMessage("Preparing to export video...");
-      setSaveProgress(0);
-      if (!ffmpeg.loaded) {
-        await loadFFmpeg();
-      }
-      let tempFiles = [];
-      const processedFiles = [];
-      const [width, height] = resolution.split("x").map(Number);
-      // Calculate total slideshow duration and loop parameters
-      const totalSlideshowDuration = stories.length * duration;
-      const loopCount =
-        isExportLoopEnabled && exportLoopDuration > 0
-          ? Math.ceil(exportLoopDuration / totalSlideshowDuration)
-          : 1;
-      // Process images multiple times based on loop settings
-      for (let loop = 0; loop < loopCount; loop++) {
-        for (let i = 0; i < stories.length; i++) {
-          const story = stories[i];
-          setProgressMessage(`Processing image ${i + 1}/${stories.length} (Loop ${loop + 1}/${loopCount})`);
-      
-          // Get image data from pre-scaled export version if available
-          let imageData;
-          try {
-            if (story.exportData) {
-              // Use the pre-scaled export version (much faster)
-              const imageBlob = base64ToBlob(story.exportData);
-              imageData = new Uint8Array(await imageBlob.arrayBuffer());
-            } else if (story.base64Data) {
-              // Fall back to base64 data if available (from older uploads)
-              const imageBlob = base64ToBlob(story.base64Data);
-              imageData = new Uint8Array(await imageBlob.arrayBuffer());
-            } else {
-              // Last resort: fetch from URL
-              imageData = await fetchFile(story.url);
-            }
-          } catch (imageError) {
-            console.error(`Error fetching image ${i + 1}:`, imageError);
-            throw new Error(`Failed to process image ${i + 1}. Please check if all images are valid.`);
-          }
-      
-          const inputName = `input_${loop}_${i}.png`;
-          const outputName = `processed_${loop}_${i}.mp4`;
-      
-          await ffmpeg.writeFile(inputName, imageData);
-          tempFiles.push(inputName);
-      
-          // Since images are pre-scaled, we can simplify the FFmpeg command
-          // If using exportData, we don't need complex scaling filters
-          const scaleFilter = story.exportData 
-            ? "scale=iw:ih" // No scaling needed, keep as is
-            : getCoverFilterString(width, height, imageFitMode); // For backward compatibility
-      
-          await ffmpeg.exec([
-            "-loop",
-            "1",
-            "-i",
-            inputName,
-            "-c:v",
-            "libx264",
-            "-t",
-            `${duration}`,
-            "-pix_fmt",
-            "yuv420p",
-            "-vf",
-            scaleFilter,
-            "-r",
-            "30",
-            "-preset",
-            "ultrafast",
-            outputName,
-          ]);
-          
-          tempFiles.push(outputName);
-          processedFiles.push({ name: outputName });
-          
-          // Update progress, accounting for multiple loops
-          setSaveProgress(
-            ((loop * stories.length + i + 1) / (loopCount * stories.length)) * 75
-          );
+const handleSaveSession = async (exportSettings) => {
+  const finalExportSettings = {
+    ...exportSettings,
+    imageFitMode: imageFitMode, // Add this to your export settings
+  };
+  // Destructure export settings with default values
+  const {
+    resolution = "1080x1920",
+    isExportLoopEnabled = false,
+    exportLoopDuration = 0,
+  } = finalExportSettings;
+  try {
+    let fileHandle;
+    let fileName = "untitled.mp4";
+    // Existing file handle logic remains the same
+    if (!("showSaveFilePicker" in window)) {
+      const link = document.createElement("a");
+      link.download = fileName;
+      fileHandle = {
+        createWritable: async () => {
+          return {
+            write: async (data) => {
+              const url = URL.createObjectURL(
+                new Blob([data], { type: "video/mp4" })
+              );
+              link.href = url;
+              link.click();
+              URL.revokeObjectURL(url);
+            },
+            close: async () => {},
+          };
+        },
+      };
+    } else {
+      fileHandle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [
+          { description: "MP4 Video", accept: { "video/mp4": [".mp4"] } },
+        ],
+      });
+    }
+    setIsExporting(true);
+    setShowProgress(true);
+    setProgressMessage("Preparing to export video...");
+    setSaveProgress(0);
+    if (!ffmpeg.loaded) {
+      await loadFFmpeg();
+    }
+    let tempFiles = [];
+    const processedFiles = [];
+    const [width, height] = resolution.split("x").map(Number);
+    
+    // Calculate total slideshow duration and loop parameters
+    const totalSlideshowDuration = stories.length * duration;
+    const loopCount =
+      isExportLoopEnabled && exportLoopDuration > 0
+        ? Math.ceil(exportLoopDuration / totalSlideshowDuration)
+        : 1;
+    
+    // OPTIMIZED APPROACH: Process each image only once, then create the loop structure
+    
+    // Step 1: Process each unique image only once
+    for (let i = 0; i < stories.length; i++) {
+      const story = stories[i];
+      setProgressMessage(`Processing image ${i + 1}/${stories.length}`);
+  
+      // Get image data from pre-scaled export version if available
+      let imageData;
+      try {
+        if (story.exportData) {
+          // Use the pre-scaled export version (much faster)
+          const imageBlob = base64ToBlob(story.exportData);
+          imageData = new Uint8Array(await imageBlob.arrayBuffer());
+        } else if (story.base64Data) {
+          // Fall back to base64 data if available (from older uploads)
+          const imageBlob = base64ToBlob(story.base64Data);
+          imageData = new Uint8Array(await imageBlob.arrayBuffer());
+        } else {
+          // Last resort: fetch from URL
+          imageData = await fetchFile(story.url);
         }
+      } catch (imageError) {
+        console.error(`Error fetching image ${i + 1}:`, imageError);
+        throw new Error(`Failed to process image ${i + 1}. Please check if all images are valid.`);
       }
-
-      // Write concatenation list
-      await ffmpeg.writeFile(
-        "list.txt",
-        processedFiles.map((f) => `file '${f.name}'`).join("\n")
-      );
-      tempFiles.push("list.txt");
-      setProgressMessage("Creating final video...");
-      setSaveProgress(85);
-      // Concatenate processed files
+  
+      const inputName = `input_${i}.png`;
+      const outputName = `processed_${i}.mp4`;
+  
+      await ffmpeg.writeFile(inputName, imageData);
+      tempFiles.push(inputName);
+  
+      // Since images are pre-scaled, we can simplify the FFmpeg command
+      // If using exportData, we don't need complex scaling filters
+      const scaleFilter = story.exportData 
+        ? "scale=iw:ih" // No scaling needed, keep as is
+        : getCoverFilterString(width, height, imageFitMode); // For backward compatibility
+  
       await ffmpeg.exec([
-        "-f",
-        "concat",
-        "-safe",
-        "0",
+        "-loop",
+        "1",
         "-i",
-        "list.txt",
+        inputName,
         "-c:v",
-        "copy",
-        "temp_output.mp4",
+        "libx264",
+        "-t",
+        `${duration}`,
+        "-pix_fmt",
+        "yuv420p",
+        "-vf",
+        scaleFilter,
+        "-r",
+        "30",
+        "-preset",
+        "ultrafast",
+        outputName,
       ]);
-      tempFiles.push("temp_output.mp4");
+      
+      tempFiles.push(outputName);
+      processedFiles.push({ name: outputName });
+      
+      // Update progress for image processing phase (60% of the total)
+      setSaveProgress((i + 1) / stories.length * 60);
+    }
 
-      // Add Background Music with improved error handling
-      if (musicUrl) {
-        setProgressMessage("Adding background music...");
+    // Step 2: Create a list file for the specified number of loops
+    setProgressMessage("Preparing video segments...");
+    setSaveProgress(65);
+
+    // Generate file list content based on loop count
+    let fileListContent = "";
+    for (let loop = 0; loop < loopCount; loop++) {
+      for (let i = 0; i < processedFiles.length; i++) {
+        fileListContent += `file '${processedFiles[i].name}'\n`;
+      }
+    }
+
+    // Write the list file
+    await ffmpeg.writeFile("loop_list.txt", fileListContent);
+    tempFiles.push("loop_list.txt");
+
+    // Step 3: Concatenate all segments based on the loop count
+    setProgressMessage("Creating final video...");
+    setSaveProgress(70);
+    
+    // Concatenate processed files (based on the loop list)
+    await ffmpeg.exec([
+      "-f",
+      "concat",
+      "-safe",
+      "0",
+      "-i",
+      "loop_list.txt",
+      "-c:v",
+      "copy",
+      "temp_output.mp4",
+    ]);
+    tempFiles.push("temp_output.mp4");
+
+    // Add Background Music with improved error handling
+    if (musicUrl) {
+      setProgressMessage("Adding background music...");
+      setSaveProgress(80);
+      try {
+        // Try to get music data and validate it
+        let musicData;
         try {
-          // Try to get music data and validate it
-          let musicData;
-          try {
-            musicData = await fetchFile(musicUrl);
-            console.log("Music data fetched, size:", musicData.byteLength);
+          musicData = await fetchFile(musicUrl);
+          console.log("Music data fetched, size:", musicData.byteLength);
 
-            // Basic validation - ensure we have actual data
-            if (!musicData || musicData.byteLength < 1000) {
-              throw new Error("Music file appears to be invalid or too small");
-            }
-          } catch (fetchError) {
-            console.error("Music fetch error:", fetchError);
-            throw new Error("Could not access music file");
+          // Basic validation - ensure we have actual data
+          if (!musicData || musicData.byteLength < 1000) {
+            throw new Error("Music file appears to be invalid or too small");
           }
-
-          // Write music file to FFmpeg
-          await ffmpeg.writeFile("background.mp3", musicData);
-
-          // Process video with audio
-          await ffmpeg.exec([
-            "-i",
-            "temp_output.mp4",
-            "-ss",
-            String(musicStartPoint),
-            "-i",
-            "background.mp3",
-            "-shortest",
-            "-map",
-            "0:v",
-            "-map",
-            "1:a",
-            "-c:v",
-            "copy",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "192k",
-            "final_output.mp4",
-          ]);
-
-          // Clean up temporary music file
-          try {
-            await ffmpeg.deleteFile("background.mp3");
-            await ffmpeg.deleteFile("temp_output.mp4");
-          } catch (cleanupError) {
-            console.warn("Non-critical cleanup error:", cleanupError);
-            // Continue with export even if cleanup fails
-          }
-        } catch (musicError) {
-          console.error("Music processing failed:", musicError);
-          // Fallback: export without music
-          setProgressMessage(
-            "Music processing failed, creating video without audio..."
-          );
-          await ffmpeg.exec([
-            "-i",
-            "temp_output.mp4",
-            "-c",
-            "copy",
-            "final_output.mp4",
-          ]);
+        } catch (fetchError) {
+          console.error("Music fetch error:", fetchError);
+          throw new Error("Could not access music file");
         }
-      } else {
-        // No music specified, just copy the video
+
+        // Write music file to FFmpeg
+        await ffmpeg.writeFile("background.mp3", musicData);
+
+        // Process video with audio
+        await ffmpeg.exec([
+          "-i",
+          "temp_output.mp4",
+          "-ss",
+          String(musicStartPoint),
+          "-i",
+          "background.mp3",
+          "-shortest",
+          "-map",
+          "0:v",
+          "-map",
+          "1:a",
+          "-c:v",
+          "copy",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "192k",
+          "final_output.mp4",
+        ]);
+
+        // Clean up temporary music file
+        try {
+          await ffmpeg.deleteFile("background.mp3");
+          await ffmpeg.deleteFile("temp_output.mp4");
+        } catch (cleanupError) {
+          console.warn("Non-critical cleanup error:", cleanupError);
+          // Continue with export even if cleanup fails
+        }
+      } catch (musicError) {
+        console.error("Music processing failed:", musicError);
+        // Fallback: export without music
+        setProgressMessage(
+          "Music processing failed, creating video without audio..."
+        );
         await ffmpeg.exec([
           "-i",
           "temp_output.mp4",
@@ -3222,55 +3225,65 @@ const StorySlider = () => {
           "final_output.mp4",
         ]);
       }
+    } else {
+      // No music specified, just copy the video
+      await ffmpeg.exec([
+        "-i",
+        "temp_output.mp4",
+        "-c",
+        "copy",
+        "final_output.mp4",
+      ]);
+    }
 
-      // Prepare final output
-      setProgressMessage("Preparing download...");
-      setSaveProgress(95);
+    // Prepare final output
+    setProgressMessage("Preparing download...");
+    setSaveProgress(95);
 
-      try {
-        // Read the final file
-        const data = await ffmpeg.readFile("final_output.mp4");
-        setSaveProgress(100);
+    try {
+      // Read the final file
+      const data = await ffmpeg.readFile("final_output.mp4");
+      setSaveProgress(100);
 
-        // Write to target file
-        const writable = await fileHandle.createWritable();
-        await writable.write(new Blob([data.buffer], { type: "video/mp4" }));
-        await writable.close();
+      // Write to target file
+      const writable = await fileHandle.createWritable();
+      await writable.write(new Blob([data.buffer], { type: "video/mp4" }));
+      await writable.close();
 
-        // Clean up
-        setShowProgress(false);
-        setIsExporting(false);
-        setShowShareNotification(true);
-
-        // Clean up temporary files
-        try {
-          for (const tempFile of tempFiles) {
-            await ffmpeg.deleteFile(tempFile);
-          }
-          await ffmpeg.deleteFile("final_output.mp4");
-        } catch (cleanupError) {
-          console.warn("Final cleanup error (non-critical):", cleanupError);
-        }
-      } catch (finalError) {
-        console.error("Final output error:", finalError);
-        throw new Error(`Failed to save video: ${finalError.message}`);
-      }
-    } catch (error) {
-      console.error("Export error:", error);
+      // Clean up
       setShowProgress(false);
       setIsExporting(false);
-      alert(`Export failed: ${error.message}`);
+      setShowShareNotification(true);
 
-      // Try to clean up any temp files in case of error
+      // Clean up temporary files
       try {
-        for (const tempFile of tempFiles || []) {
-          await ffmpeg.deleteFile(tempFile).catch(() => {});
+        for (const tempFile of tempFiles) {
+          await ffmpeg.deleteFile(tempFile);
         }
-      } catch (e) {
-        // Ignore cleanup errors on fail
+        await ffmpeg.deleteFile("final_output.mp4");
+      } catch (cleanupError) {
+        console.warn("Final cleanup error (non-critical):", cleanupError);
       }
+    } catch (finalError) {
+      console.error("Final output error:", finalError);
+      throw new Error(`Failed to save video: ${finalError.message}`);
     }
-  };
+  } catch (error) {
+    console.error("Export error:", error);
+    setShowProgress(false);
+    setIsExporting(false);
+    alert(`Export failed: ${error.message}`);
+
+    // Try to clean up any temp files in case of error
+    try {
+      for (const tempFile of tempFiles || []) {
+        await ffmpeg.deleteFile(tempFile).catch(() => {});
+      }
+    } catch (e) {
+      // Ignore cleanup errors on fail
+    }
+  }
+};
   // Handle Save Sessions
   const handleSaveSessionToDb = async (sessionName, isSilent = false) => {
     try {

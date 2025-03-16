@@ -8,6 +8,8 @@ import {
   ChevronUp,
   AlertTriangle,
   Info,
+  Expand,   
+  Minimize,
 } from "lucide-react";
 import { initiateExport } from "../services/exportService";
 
@@ -91,6 +93,9 @@ const ExportModal = ({
   // Check if duration exceeds the 3-minute limit (180 seconds)
   const exceedsMaxDuration = totalDuration > 180;
 
+// In ExportModal.jsx, add a new state for the export fit mode
+  const [exportFitMode, setExportFitMode] = useState("cover");
+
   // Format time function (for display)
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -158,6 +163,7 @@ const ExportModal = ({
       isExportLoopEnabled,
       exportLoopDuration: isExportLoopEnabled ? totalDuration : 0,
       fileName: `${fileName}.mp4`,
+      imageFitMode: exportFitMode, 
     };
 
     try {
@@ -167,8 +173,9 @@ const ExportModal = ({
         isExportLoopEnabled,
         exportLoopDuration: isExportLoopEnabled ? totalDuration : 0,
         fileName: `${fileName}.mp4`,
+        imageFitMode: exportFitMode, 
       };
-
+      console.log("Exporting with fit mode:", exportFitMode);
       const exportedFile = await initiateExport(exportData, exportConfig);
       
       // Close file name prompt and reset states
@@ -254,6 +261,7 @@ const ExportModal = ({
               />
             </div>
 
+   
             <div className="duration-info">
               <div className="info-row">
                 <span>Current slideshow length:</span>

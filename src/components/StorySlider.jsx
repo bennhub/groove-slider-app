@@ -2521,6 +2521,12 @@ const StorySlider = () => {
       img.src = url;
     });
   };
+
+  useEffect(() => {
+    // Make imageFitMode accessible globally for export
+    window.currentImageFitMode = imageFitMode;
+  }, [imageFitMode]);
+
   // Add this useEffect to preload adjacent images
   useEffect(() => {
     const preloadAdjacentImages = async () => {
@@ -2989,10 +2995,11 @@ for (let i = 0; i < filesToProcess.length; i++) {
     }
   };
   const getCoverFilterString = (width, height, fitMode) => {
-    if (fitMode !== "cover") {
+    if (fitMode === "contain") {
+      // Contain mode: fit the entire image within the frame, adding padding if necessary
       return `scale=${width}:${height}:force_original_aspect_ratio=1,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
     } else {
-      // Simpler cover implementation
+      // Cover mode: fill the entire frame, cropping if necessary
       return `scale=iw*max(${width}/iw\\,${height}/ih):ih*max(${width}/iw\\,${height}/ih),crop=${width}:${height}`;
     }
   };
@@ -3130,11 +3137,12 @@ const handleSaveSession = async (exportSettings) => {
       await ffmpeg.writeFile(inputName, imageData);
       tempFiles.push(inputName);
   
-      // Since images are pre-scaled, we can simplify the FFmpeg command
-      // If using exportData, we don't need complex scaling filters
-      const scaleFilter = story.exportData 
-        ? "scale=iw:ih" // No scaling needed, keep as is
-        : getCoverFilterString(width, height, imageFitMode); // For backward compatibility
+      console.log("Export settings:", finalExportSettings); // Debug log to verify settings
+      console.log("Current image fit mode:", finalExportSettings.imageFitMode); // Debug specific setting
+
+      // Make sure the filter is using the correct parameter
+      // In handleSaveSession function:
+    const scaleFilter = getCoverFilterString(width, height, finalExportSettings.imageFitMode);
   
       await ffmpeg.exec([
         "-loop",
@@ -3468,41 +3476,33 @@ const handleSaveSession = async (exportSettings) => {
                           )}
                         </button>
                         {stories[currentIndex] && stories[currentIndex].url ? (
-                          <img
-                            src={stories[currentIndex].url}
-                            alt={`Slide ${currentIndex + 1}`}
-                            className="media-content"
-                            style={{
-                              objectFit: imageFitMode,
-                              width: "100%",
-                              height: "100%",
-                              display: "block",
-                            }}
-                            loading="eager"
-                            onError={(e) => {
-                              console.log(
-                                "Image failed to load, attempting recovery"
-                              );
-                              // If URL fails, try to recover from base64
-                              const currentStory = stories[currentIndex];
-                              if (currentStory && currentStory.base64Data) {
-                                const blob = base64ToBlob(
-                                  currentStory.base64Data
-                                );
-                                const newUrl = URL.createObjectURL(blob);
-
-                                // Update the URL in the stories array
-                                const updatedStories = [...stories];
-                                updatedStories[currentIndex] = {
-                                  ...currentStory,
-                                  url: newUrl,
-                                };
-
-                                setStories(updatedStories);
-                                e.target.src = newUrl;
-                              }
-                            }}
-                          />
+                        <img
+                        src={stories[currentIndex].url}
+                        alt={`Slide ${currentIndex + 1}`}
+                        className="media-content"
+                        style={{
+                          objectFit: imageFitMode, // Use the current fit mode
+                          width: "100%",
+                          height: "100%",
+                          display: "block",
+                        }}
+                        loading="eager"
+                        onError={(e) => {
+                          console.log("Image failed to load, attempting recovery");
+                          const currentStory = stories[currentIndex];
+                          if (currentStory && currentStory.base64Data) {
+                            const blob = base64ToBlob(currentStory.base64Data);
+                            const newUrl = URL.createObjectURL(blob);
+                            const updatedStories = [...stories];
+                            updatedStories[currentIndex] = {
+                              ...currentStory,
+                              url: newUrl,
+                            };
+                            setStories(updatedStories);
+                            e.target.src = newUrl;
+                          }
+                        }}
+                      />
                         ) : (
                           <div
                             className="empty-image-placeholder"
@@ -3595,6 +3595,7 @@ const handleSaveSession = async (exportSettings) => {
                   setIsExporting(false);
                   setShowExportModal(false);
                 }}
+                currentImageFitMode={imageFitMode}
               />
                
               <SaveSessionModal

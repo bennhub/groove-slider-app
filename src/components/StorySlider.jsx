@@ -968,18 +968,18 @@ const ProgressModal = ({ isOpen, progress, message, onCancel }) => {
   return (
     <div className="modal-overlay">
       <div className="modal-content export-progress">
-        <button 
-          className="close-button" 
+        <button
+          className="close-button"
           onClick={onCancel}
           style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            background: 'none',
-            border: 'none',
-            color: 'white',
-            cursor: 'pointer',
-            zIndex: 1000
+            position: "absolute",
+            top: "10px",
+            right: "10px",
+            background: "none",
+            border: "none",
+            color: "white",
+            cursor: "pointer",
+            zIndex: 1000,
           }}
         >
           <X size={24} />
@@ -1928,119 +1928,122 @@ const EditPanel = ({
 
       {/* Thumbnails grid */}
       <div
-  className="thumbnails-container"
-  style={{
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
-    gap: "10px",
-    padding: "15px",
-    overflowY: "auto",
-    maxHeight: "70vh",
-    WebkitOverflowScrolling: "touch",
-    touchAction: "pan-y",
-  }}
->
-  {stories.map((story, index) => {
-    const isSelected = selectedIndices.includes(index);
-    const selectionOrder = isSelected ? selectedIndices.indexOf(index) + 1 : null;
-
-    return (
-      <div
-        key={index}
-        onClick={() => {
-          if (mode === "reorder") {
-            handlePhotoSelectForReorder(index);
-          } else if (mode === "delete") {
-            handlePhotoSelectForDelete(index);
-          }
-        }}
+        className="thumbnails-container"
         style={{
-          position: "relative",
-          cursor: "pointer",
-          borderRadius: "8px",
-          overflow: "hidden",
-          border: isSelected 
-            ? "2px solid #6c0d9c" 
-            : "2px solid transparent",
-          transition: "transform 0.2s, box-shadow 0.2s, border 0.2s",
-          aspectRatio: "1/1",
-          width: "100%",
-          height: "100%",
-          padding: "2px",
-          backgroundColor: "white",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+          gap: "10px",
+          padding: "15px",
+          overflowY: "auto",
+          maxHeight: "70vh",
+          WebkitOverflowScrolling: "touch",
+          touchAction: "pan-y",
         }}
       >
-        <div
-          style={{
-            position: "relative",
-            width: "100%",
-            height: "100%",
-            overflow: "hidden",
-          }}
-        >
-          <img
-            src={story.thumbnailData || story.url}
-            alt={`Slide ${index + 1}`}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              borderRadius: "6px",
-            }}
-          />
+        {stories.map((story, index) => {
+          const isSelected = selectedIndices.includes(index);
+          const selectionOrder = isSelected
+            ? selectedIndices.indexOf(index) + 1
+            : null;
 
-          {/* Reorder mode indicator */}
-          {mode === "reorder" && (
+          return (
             <div
+              key={index}
+              onClick={() => {
+                if (mode === "reorder") {
+                  handlePhotoSelectForReorder(index);
+                } else if (mode === "delete") {
+                  handlePhotoSelectForDelete(index);
+                }
+              }}
               style={{
-                position: "absolute",
-                top: "5px",
-                right: "5px",
-                width: "25px",
-                height: "25px",
-                borderRadius: "50%",
-                backgroundColor: isSelected ? "#6c0d9c" : "rgba(255,255,255,0.5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                fontWeight: "bold",
-                fontSize: "14px",
-                border: "1px solid white",
+                position: "relative",
+                cursor: "pointer",
+                borderRadius: "8px",
+                overflow: "hidden",
+                border: isSelected
+                  ? "2px solid #6c0d9c"
+                  : "2px solid transparent",
+                transition: "transform 0.2s, box-shadow 0.2s, border 0.2s",
+                aspectRatio: "1/1",
+                width: "100%",
+                height: "100%",
+                padding: "2px",
+                backgroundColor: "white",
               }}
             >
-              {isSelected ? selectionOrder : ""}
-            </div>
-          )}
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  height: "100%",
+                  overflow: "hidden",
+                }}
+              >
+                <img
+                  src={story.thumbnailData || story.url}
+                  alt={`Slide ${index + 1}`}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: "6px",
+                  }}
+                />
 
-          {/* Delete mode indicator */}
-          {mode === "delete" && selectedToDelete.includes(index) && (
-            <div
-              style={{
-                position: "absolute",
-                top: "5px",
-                right: "5px",
-                width: "25px",
-                height: "25px",
-                borderRadius: "50%",
-                backgroundColor: "#e74c3c",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                border: "1px solid white",
-              }}
-            >
-              <Check size={16} />
+                {/* Reorder mode indicator */}
+                {mode === "reorder" && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "5px",
+                      right: "5px",
+                      width: "25px",
+                      height: "25px",
+                      borderRadius: "50%",
+                      backgroundColor: isSelected
+                        ? "#6c0d9c"
+                        : "rgba(255,255,255,0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontWeight: "bold",
+                      fontSize: "14px",
+                      border: "1px solid white",
+                    }}
+                  >
+                    {isSelected ? selectionOrder : ""}
+                  </div>
+                )}
+
+                {/* Delete mode indicator */}
+                {mode === "delete" && selectedToDelete.includes(index) && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "5px",
+                      right: "5px",
+                      width: "25px",
+                      height: "25px",
+                      borderRadius: "50%",
+                      backgroundColor: "#e74c3c",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      border: "1px solid white",
+                    }}
+                  >
+                    <Check size={16} />
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          );
+        })}
       </div>
-    );
-  })}
-</div>
-</div>
-   
+    </div>
   );
 };
 //==============================================
@@ -2282,7 +2285,7 @@ Loop Slideshow
  * @param {string|Blob} src - Image source (URL or File)
  * @param {Object} options - Resize options
  * @param {number} options.maxWidth - Target width (e.g., 1080)
- * @param {number} options.maxHeight - Target height (e.g., 1920) 
+ * @param {number} options.maxHeight - Target height (e.g., 1920)
  * @param {string} options.fit - Fit mode ('cover' or 'contain')
  * @param {string} options.format - Output format ('jpeg' or 'png')
  * @param {number} options.quality - JPEG quality (0-1)
@@ -2292,24 +2295,24 @@ const resizeImage = (src, options = {}) => {
   const {
     maxWidth = 1080,
     maxHeight = 1920,
-    fit = 'cover',
-    format = 'jpeg',
-    quality = 0.9
+    fit = "cover",
+    format = "jpeg",
+    quality = 0.9,
   } = options;
 
   return new Promise((resolve, reject) => {
     const img = new Image();
-    
+
     // Create object URL if src is a File/Blob
     const objectUrl = src instanceof Blob ? URL.createObjectURL(src) : null;
-    
+
     img.onload = () => {
       // Calculate dimensions while maintaining aspect ratio
       let targetWidth, targetHeight;
       const imgRatio = img.width / img.height;
       const targetRatio = maxWidth / maxHeight;
-      
-      if (fit === 'cover') {
+
+      if (fit === "cover") {
         // Cover: fill the entire space, cropping if needed
         if (imgRatio > targetRatio) {
           // Image is wider than target ratio, match height
@@ -2332,44 +2335,45 @@ const resizeImage = (src, options = {}) => {
           targetWidth = targetHeight * imgRatio;
         }
       }
-      
+
       // Create canvas with target dimensions
-      const canvas = document.createElement('canvas');
-      canvas.width = fit === 'cover' ? maxWidth : targetWidth;
-      canvas.height = fit === 'cover' ? maxHeight : targetHeight;
-      
+      const canvas = document.createElement("canvas");
+      canvas.width = fit === "cover" ? maxWidth : targetWidth;
+      canvas.height = fit === "cover" ? maxHeight : targetHeight;
+
       // Get context and draw image
-      const ctx = canvas.getContext('2d');
-      
+      const ctx = canvas.getContext("2d");
+
       // If using 'cover', we need to center the resized image
-      let drawX = 0, drawY = 0;
-      
-      if (fit === 'cover') {
+      let drawX = 0,
+        drawY = 0;
+
+      if (fit === "cover") {
         drawX = (maxWidth - targetWidth) / 2;
         drawY = (maxHeight - targetHeight) / 2;
       }
-      
+
       // Draw image
       ctx.drawImage(img, drawX, drawY, targetWidth, targetHeight);
-      
+
       // Convert to data URL
       const dataUrl = canvas.toDataURL(`image/${format}`, quality);
-      
+
       // Clean up object URL if created
       if (objectUrl) URL.revokeObjectURL(objectUrl);
-      
+
       resolve({
         dataUrl,
         width: canvas.width,
-        height: canvas.height
+        height: canvas.height,
       });
     };
-    
+
     img.onerror = (e) => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
-      reject(new Error('Failed to load image'));
+      reject(new Error("Failed to load image"));
     };
-    
+
     // Set source
     img.src = objectUrl || src;
   });
@@ -2384,11 +2388,10 @@ const createThumbnail = (src) => {
   return resizeImage(src, {
     maxWidth: 150,
     maxHeight: 150,
-    fit: 'cover',
-    quality: 0.8
-  }).then(result => result.dataUrl);
+    fit: "cover",
+    quality: 0.8,
+  }).then((result) => result.dataUrl);
 };
-
 
 //==============================================
 // STORY SLIDER COMPONENT - State & Handlers
@@ -2410,7 +2413,7 @@ const StorySlider = () => {
   const [isSavingSession, setIsSavingSession] = useState(false);
   const [showSessionsList, setShowSessionsList] = useState(false);
   // image resize
-  const [imageFitMode, setImageFitMode] = useState("cover");
+  const [imageFitMode, setImageFitMode] = useState("contain");
   // Notifications State
   const [showShareNotification, setShowShareNotification] = useState(false);
   // Export State
@@ -2440,18 +2443,21 @@ const StorySlider = () => {
   // audius use states
   const [isAudiusModalOpen, setIsAudiusModalOpen] = useState(false);
 
-
   // cancel export
   const handleCancelExport = () => {
-    if (window.confirm("Are you sure you want to cancel the export? The process will stop immediately.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to cancel the export? The process will stop immediately."
+      )
+    ) {
       // Set the cancellation flag
       isCancelledRef.current = true;
-      
+
       // Update UI state
       setIsExporting(false);
       setShowProgress(false);
       setShowShareNotification(false);
-      
+
       // Show a message to the user
       alert("Export has been canceled.");
     }
@@ -2566,107 +2572,117 @@ const StorySlider = () => {
       currentStoriesCount: stories.length,
       isCurrentlyPlaying: isPlaying,
     });
-  
+
     // Pause playback if needed
     const wasPlaying = isPlaying;
     if (isPlaying) {
-      console.log("Pausing playback before adding images to prevent rendering issues");
+      console.log(
+        "Pausing playback before adding images to prevent rendering issues"
+      );
       stopAutoRotation();
       if (audioRef.current) {
         audioRef.current.pause();
       }
       setIsPlaying(false);
     }
-  
+
     const files = Array.from(event.target.files).filter((file) =>
       file.type.startsWith("image/")
     );
-  
+
     if (files.length === 0) {
       alert("Please select image files only.");
       return;
     }
-  
-   // Check if adding these files would exceed the 25 photo limit
-const currentPhotoCount = stories.length;
-const remainingSlots = 25 - currentPhotoCount;
 
-if (remainingSlots <= 0) {
-  alert("Maximum limit of 25 photos reached. Please remove some photos before adding more.");
-  return;
-}
+    // Check if adding these files would exceed the 25 photo limit
+    const currentPhotoCount = stories.length;
+    const remainingSlots = 25 - currentPhotoCount;
 
-// Create a variable to store the files we'll actually process
-let filesToProcess;
-if (files.length > remainingSlots) {
-  alert(`Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`);
-  filesToProcess = files.slice(0, remainingSlots);
-} else {
-  filesToProcess = files;
-}
-  
+    if (remainingSlots <= 0) {
+      alert(
+        "Maximum limit of 25 photos reached. Please remove some photos before adding more."
+      );
+      return;
+    }
+
+    // Create a variable to store the files we'll actually process
+    let filesToProcess;
+    if (files.length > remainingSlots) {
+      alert(
+        `Only ${remainingSlots} photos can be added. Maximum limit of 25 photos reached.`
+      );
+      filesToProcess = files.slice(0, remainingSlots);
+    } else {
+      filesToProcess = files;
+    }
+
     // Show a progress modal if there are many images
     if (files.length > 3) {
       setShowProgress(true);
       setProgressMessage("Processing images...");
       setSaveProgress(0);
     }
-  
+
     // Process files one by one with resizing
     const processedFiles = [];
     const tempFiles = [];
-    const resolution = "1920x1080"; 
+    const resolution = "1920x1080";
     const [width, height] = resolution.split("x").map(Number);
-    const newStories = []; 
-    
-  // Process files one by one with resizing
-for (let i = 0; i < filesToProcess.length; i++) {
-  const file = filesToProcess[i];
-  setProgressMessage(`Processing image ${i + 1}/${filesToProcess.length}`);
-  
-  try {
-    // Update progress
-    if (filesToProcess.length > 3) {
-      setSaveProgress((i / filesToProcess.length) * 100);
-      setProgressMessage(`Processing image ${i+1} of ${filesToProcess.length}...`);
-    }
-        
+    const newStories = [];
+
+    // Process files one by one with resizing
+    for (let i = 0; i < filesToProcess.length; i++) {
+      const file = filesToProcess[i];
+      setProgressMessage(`Processing image ${i + 1}/${filesToProcess.length}`);
+
+      try {
+        // Update progress
+        if (filesToProcess.length > 3) {
+          setSaveProgress((i / filesToProcess.length) * 100);
+          setProgressMessage(
+            `Processing image ${i + 1} of ${filesToProcess.length}...`
+          );
+        }
+
         // Create display version (for slideshow UI)
         const displayImage = await resizeImage(file, {
-          maxWidth: 1080,    // Adjust based on typical display size
+          maxWidth: 1080, // Adjust based on typical display size
           maxHeight: 1920,
-          fit: 'contain',    // Preserve aspect ratio
-          quality: 0.85      // Good quality but smaller file size
+          fit: "contain", // Preserve aspect ratio
+          quality: 0.9, // Good quality but smaller file size
         });
-        
+
         // Create export version (pre-scaled to 1080p for FFmpeg)
         const exportImage = await resizeImage(file, {
           maxWidth: 1080,
           maxHeight: 1920,
-          fit: 'cover',      // Match your export settings
-          quality: 0.9       // Higher quality for export
+          fit: "contain", // Match your export settings
+          quality: 0.9, // Higher quality for export
         });
-        
+
         // Create thumbnail for edit panel
         const thumbnailImage = await createThumbnail(file);
-        
+
         // Create a URL for the display version
-        const displayBlob = await fetch(displayImage.dataUrl).then(r => r.blob());
+        const displayBlob = await fetch(displayImage.dataUrl).then((r) =>
+          r.blob()
+        );
         const displayUrl = URL.createObjectURL(displayBlob);
-        
+
         newStories.push({
           type: "image",
-          url: displayUrl,                 // URL for display in slideshow
+          url: displayUrl, // URL for display in slideshow
           originalName: file.name,
           exportData: exportImage.dataUrl, // Pre-scaled for export (1080p)
-          thumbnailData: thumbnailImage,   // Small thumbnail for edit panel
+          thumbnailData: thumbnailImage, // Small thumbnail for edit panel
           dateAdded: new Date().toISOString(),
         });
       } catch (error) {
         console.error(`Error processing image ${file.name}:`, error);
       }
     }
-  
+
     // Update stories state
     setStories((prevStories) => {
       const updatedStories = [...prevStories, ...newStories];
@@ -2677,28 +2693,30 @@ for (let i = 0; i < filesToProcess.length; i++) {
       });
       return updatedStories;
     });
-  
+
     // Hide progress if shown
     if (files.length > 3) {
       setShowProgress(false);
     }
-  
+
     // Ensure we reset to the first image
     setCurrentIndex(0);
-  
+
     // Clear the file input
     event.target.value = "";
-  
+
     // Silent auto-save after adding images
     if (newStories.length > 0) {
       try {
         await handleSaveSessionToDb("auto_save_" + Date.now(), true);
-        console.log(`Auto-save completed with ${newStories.length} total new images`);
+        console.log(
+          `Auto-save completed with ${newStories.length} total new images`
+        );
       } catch (error) {
         console.error("Auto-save failed:", error);
       }
     }
-  
+
     // Resume playback if needed
     if (wasPlaying && musicUrl) {
       console.log("Resuming playback after adding images");
@@ -2995,13 +3013,8 @@ for (let i = 0; i < filesToProcess.length; i++) {
     }
   };
   const getCoverFilterString = (width, height, fitMode) => {
-    if (fitMode === "contain") {
-      // Contain mode: fit the entire image within the frame, adding padding if necessary
-      return `scale=${width}:${height}:force_original_aspect_ratio=1,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
-    } else {
-      // Cover mode: fill the entire frame, cropping if necessary
-      return `scale=iw*max(${width}/iw\\,${height}/ih):ih*max(${width}/iw\\,${height}/ih),crop=${width}:${height}`;
-    }
+    // Always use contain mode regardless of the parameter
+    return `scale=${width}:${height}:force_original_aspect_ratio=1,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
   };
   //handle Save and load sessions from indexDB
   const handleLoadSession = async (sessionId) => {
@@ -3045,225 +3058,246 @@ for (let i = 0; i < filesToProcess.length; i++) {
     }
   };
   // Export functionality
-const handleSaveSession = async (exportSettings) => {
-  const finalExportSettings = {
-    ...exportSettings,
-    imageFitMode: imageFitMode, // Add this to your export settings
-  };
-  // Destructure export settings with default values
-  const {
-    resolution = "1080x1920",
-    isExportLoopEnabled = false,
-    exportLoopDuration = 0,
-  } = finalExportSettings;
-  try {
-    let fileHandle;
-    let fileName = exportSettings.fileName || "untitled.mp4";
-    // Existing file handle logic remains the same
-    if (!("showSaveFilePicker" in window)) {
-      const link = document.createElement("a");
-      link.download = fileName;
-      fileHandle = {
-        createWritable: async () => {
-          return {
-            write: async (data) => {
-              const url = URL.createObjectURL(
-                new Blob([data], { type: "video/mp4" })
-              );
-              link.href = url;
-              link.click();
-              URL.revokeObjectURL(url);
-            },
-            close: async () => {},
-          };
-        },
-      };
-    } else {
-      fileHandle = await window.showSaveFilePicker({
-        suggestedName: fileName,
-        types: [
-          { description: "MP4 Video", accept: { "video/mp4": [".mp4"] } },
-        ],
-      });
-    }
-    setIsExporting(true);
-    setShowProgress(true);
-    setProgressMessage("Preparing to export video...");
-    setSaveProgress(0);
-    if (!ffmpeg.loaded) {
-      await loadFFmpeg();
-    }
-    let tempFiles = [];
-    const processedFiles = [];
-    const [width, height] = resolution.split("x").map(Number);
-    
-    // Calculate total slideshow duration and loop parameters
-    const totalSlideshowDuration = stories.length * duration;
-    const loopCount =
-      isExportLoopEnabled && exportLoopDuration > 0
-        ? Math.ceil(exportLoopDuration / totalSlideshowDuration)
-        : 1;
-    
-    // OPTIMIZED APPROACH: Process each image only once, then create the loop structure
-    
-    // Step 1: Process each unique image only once
-    for (let i = 0; i < stories.length; i++) {
-      const story = stories[i];
-      setProgressMessage(`Processing image ${i + 1}/${stories.length}`);
-  
-      // Get image data from pre-scaled export version if available
-      let imageData;
-      try {
-        if (story.exportData) {
-          // Use the pre-scaled export version (much faster)
-          const imageBlob = base64ToBlob(story.exportData);
-          imageData = new Uint8Array(await imageBlob.arrayBuffer());
-        } else if (story.base64Data) {
-          // Fall back to base64 data if available (from older uploads)
-          const imageBlob = base64ToBlob(story.base64Data);
-          imageData = new Uint8Array(await imageBlob.arrayBuffer());
-        } else {
-          // Last resort: fetch from URL
-          imageData = await fetchFile(story.url);
-        }
-      } catch (imageError) {
-        console.error(`Error fetching image ${i + 1}:`, imageError);
-        throw new Error(`Failed to process image ${i + 1}. Please check if all images are valid.`);
+  const handleSaveSession = async (exportSettings) => {
+    const finalExportSettings = {
+      ...exportSettings,
+      imageFitMode: imageFitMode, // Add this to your export settings
+    };
+    // Destructure export settings with default values
+    const {
+      resolution = "1080x1920",
+      isExportLoopEnabled = false,
+      exportLoopDuration = 0,
+    } = finalExportSettings;
+    try {
+      let fileHandle;
+      let fileName = exportSettings.fileName || "untitled.mp4";
+      // Existing file handle logic remains the same
+      if (!("showSaveFilePicker" in window)) {
+        const link = document.createElement("a");
+        link.download = fileName;
+        fileHandle = {
+          createWritable: async () => {
+            return {
+              write: async (data) => {
+                const url = URL.createObjectURL(
+                  new Blob([data], { type: "video/mp4" })
+                );
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+              },
+              close: async () => {},
+            };
+          },
+        };
+      } else {
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: fileName,
+          types: [
+            { description: "MP4 Video", accept: { "video/mp4": [".mp4"] } },
+          ],
+        });
       }
-  
-      const inputName = `input_${i}.png`;
-      const outputName = `processed_${i}.mp4`;
-  
-      await ffmpeg.writeFile(inputName, imageData);
-      tempFiles.push(inputName);
-  
-      console.log("Export settings:", finalExportSettings); // Debug log to verify settings
-      console.log("Current image fit mode:", finalExportSettings.imageFitMode); // Debug specific setting
-
-      // Make sure the filter is using the correct parameter
-      // In handleSaveSession function:
-    const scaleFilter = getCoverFilterString(width, height, finalExportSettings.imageFitMode);
-  
-      await ffmpeg.exec([
-        "-loop",
-        "1",
-        "-i",
-        inputName,
-        "-c:v",
-        "libx264",
-        "-t",
-        `${duration}`,
-        "-pix_fmt",
-        "yuv420p",
-        "-vf",
-        scaleFilter,
-        "-r",
-        "30",
-        "-preset",
-        "ultrafast",
-        outputName,
-      ]);
-      
-      tempFiles.push(outputName);
-      processedFiles.push({ name: outputName });
-      
-      // Update progress for image processing phase (60% of the total)
-      setSaveProgress((i + 1) / stories.length * 60);
-    }
-
-    // Step 2: Create a list file for the specified number of loops
-    setProgressMessage("Preparing video segments...");
-    setSaveProgress(65);
-
-    // Generate file list content based on loop count
-    let fileListContent = "";
-    for (let loop = 0; loop < loopCount; loop++) {
-      for (let i = 0; i < processedFiles.length; i++) {
-        fileListContent += `file '${processedFiles[i].name}'\n`;
+      setIsExporting(true);
+      setShowProgress(true);
+      setProgressMessage("Preparing to export video...");
+      setSaveProgress(0);
+      if (!ffmpeg.loaded) {
+        await loadFFmpeg();
       }
-    }
+      let tempFiles = [];
+      const processedFiles = [];
+      const [width, height] = resolution.split("x").map(Number);
 
-    // Write the list file
-    await ffmpeg.writeFile("loop_list.txt", fileListContent);
-    tempFiles.push("loop_list.txt");
+      // Calculate total slideshow duration and loop parameters
+      const totalSlideshowDuration = stories.length * duration;
+      const loopCount =
+        isExportLoopEnabled && exportLoopDuration > 0
+          ? Math.ceil(exportLoopDuration / totalSlideshowDuration)
+          : 1;
 
-    // Step 3: Concatenate all segments based on the loop count
-    setProgressMessage("Creating final video...");
-    setSaveProgress(70);
-    
-    // Concatenate processed files (based on the loop list)
-    await ffmpeg.exec([
-      "-f",
-      "concat",
-      "-safe",
-      "0",
-      "-i",
-      "loop_list.txt",
-      "-c:v",
-      "copy",
-      "temp_output.mp4",
-    ]);
-    tempFiles.push("temp_output.mp4");
+      // OPTIMIZED APPROACH: Process each image only once, then create the loop structure
 
-    // Add Background Music with improved error handling
-    if (musicUrl) {
-      setProgressMessage("Adding background music...");
-      setSaveProgress(80);
-      try {
-        // Try to get music data and validate it
-        let musicData;
+      // Step 1: Process each unique image only once
+      for (let i = 0; i < stories.length; i++) {
+        const story = stories[i];
+        setProgressMessage(`Processing image ${i + 1}/${stories.length}`);
+
+        // Get image data from pre-scaled export version if available
+        let imageData;
         try {
-          musicData = await fetchFile(musicUrl);
-          console.log("Music data fetched, size:", musicData.byteLength);
-
-          // Basic validation - ensure we have actual data
-          if (!musicData || musicData.byteLength < 1000) {
-            throw new Error("Music file appears to be invalid or too small");
+          if (story.exportData) {
+            // Use the pre-scaled export version (much faster)
+            const imageBlob = base64ToBlob(story.exportData);
+            imageData = new Uint8Array(await imageBlob.arrayBuffer());
+          } else if (story.base64Data) {
+            // Fall back to base64 data if available (from older uploads)
+            const imageBlob = base64ToBlob(story.base64Data);
+            imageData = new Uint8Array(await imageBlob.arrayBuffer());
+          } else {
+            // Last resort: fetch from URL
+            imageData = await fetchFile(story.url);
           }
-        } catch (fetchError) {
-          console.error("Music fetch error:", fetchError);
-          throw new Error("Could not access music file");
+        } catch (imageError) {
+          console.error(`Error fetching image ${i + 1}:`, imageError);
+          throw new Error(
+            `Failed to process image ${
+              i + 1
+            }. Please check if all images are valid.`
+          );
         }
 
-        // Write music file to FFmpeg
-        await ffmpeg.writeFile("background.mp3", musicData);
+        const inputName = `input_${i}.png`;
+        const outputName = `processed_${i}.mp4`;
 
-        // Process video with audio
+        await ffmpeg.writeFile(inputName, imageData);
+        tempFiles.push(inputName);
+
+        console.log("Export settings:", finalExportSettings); // Debug log to verify settings
+        console.log(
+          "Current image fit mode:",
+          finalExportSettings.imageFitMode
+        ); // Debug specific setting
+
+        // Make sure the filter is using the correct parameter
+        // In handleSaveSession function:
+        const scaleFilter = getCoverFilterString(
+          width,
+          height,
+          finalExportSettings.imageFitMode
+        );
+
         await ffmpeg.exec([
+          "-loop",
+          "1",
           "-i",
-          "temp_output.mp4",
-          "-ss",
-          String(musicStartPoint),
-          "-i",
-          "background.mp3",
-          "-shortest",
-          "-map",
-          "0:v",
-          "-map",
-          "1:a",
+          inputName,
           "-c:v",
-          "copy",
-          "-c:a",
-          "aac",
-          "-b:a",
-          "192k",
-          "final_output.mp4",
+          "libx264",
+          "-t",
+          `${duration}`,
+          "-pix_fmt",
+          "yuv420p",
+          "-vf",
+          scaleFilter,
+          "-r",
+          "30",
+          "-preset",
+          "ultrafast",
+          outputName,
         ]);
 
-        // Clean up temporary music file
-        try {
-          await ffmpeg.deleteFile("background.mp3");
-          await ffmpeg.deleteFile("temp_output.mp4");
-        } catch (cleanupError) {
-          console.warn("Non-critical cleanup error:", cleanupError);
-          // Continue with export even if cleanup fails
+        tempFiles.push(outputName);
+        processedFiles.push({ name: outputName });
+
+        // Update progress for image processing phase (60% of the total)
+        setSaveProgress(((i + 1) / stories.length) * 60);
+      }
+
+      // Step 2: Create a list file for the specified number of loops
+      setProgressMessage("Preparing video segments...");
+      setSaveProgress(65);
+
+      // Generate file list content based on loop count
+      let fileListContent = "";
+      for (let loop = 0; loop < loopCount; loop++) {
+        for (let i = 0; i < processedFiles.length; i++) {
+          fileListContent += `file '${processedFiles[i].name}'\n`;
         }
-      } catch (musicError) {
-        console.error("Music processing failed:", musicError);
-        // Fallback: export without music
-        setProgressMessage(
-          "Music processing failed, creating video without audio..."
-        );
+      }
+
+      // Write the list file
+      await ffmpeg.writeFile("loop_list.txt", fileListContent);
+      tempFiles.push("loop_list.txt");
+
+      // Step 3: Concatenate all segments based on the loop count
+      setProgressMessage("Creating final video...");
+      setSaveProgress(70);
+
+      // Concatenate processed files (based on the loop list)
+      await ffmpeg.exec([
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        "loop_list.txt",
+        "-c:v",
+        "copy",
+        "temp_output.mp4",
+      ]);
+      tempFiles.push("temp_output.mp4");
+
+      // Add Background Music with improved error handling
+      if (musicUrl) {
+        setProgressMessage("Adding background music...");
+        setSaveProgress(80);
+        try {
+          // Try to get music data and validate it
+          let musicData;
+          try {
+            musicData = await fetchFile(musicUrl);
+            console.log("Music data fetched, size:", musicData.byteLength);
+
+            // Basic validation - ensure we have actual data
+            if (!musicData || musicData.byteLength < 1000) {
+              throw new Error("Music file appears to be invalid or too small");
+            }
+          } catch (fetchError) {
+            console.error("Music fetch error:", fetchError);
+            throw new Error("Could not access music file");
+          }
+
+          // Write music file to FFmpeg
+          await ffmpeg.writeFile("background.mp3", musicData);
+
+          // Process video with audio
+          await ffmpeg.exec([
+            "-i",
+            "temp_output.mp4",
+            "-ss",
+            String(musicStartPoint),
+            "-i",
+            "background.mp3",
+            "-shortest",
+            "-map",
+            "0:v",
+            "-map",
+            "1:a",
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "final_output.mp4",
+          ]);
+
+          // Clean up temporary music file
+          try {
+            await ffmpeg.deleteFile("background.mp3");
+            await ffmpeg.deleteFile("temp_output.mp4");
+          } catch (cleanupError) {
+            console.warn("Non-critical cleanup error:", cleanupError);
+            // Continue with export even if cleanup fails
+          }
+        } catch (musicError) {
+          console.error("Music processing failed:", musicError);
+          // Fallback: export without music
+          setProgressMessage(
+            "Music processing failed, creating video without audio..."
+          );
+          await ffmpeg.exec([
+            "-i",
+            "temp_output.mp4",
+            "-c",
+            "copy",
+            "final_output.mp4",
+          ]);
+        }
+      } else {
+        // No music specified, just copy the video
         await ffmpeg.exec([
           "-i",
           "temp_output.mp4",
@@ -3272,65 +3306,55 @@ const handleSaveSession = async (exportSettings) => {
           "final_output.mp4",
         ]);
       }
-    } else {
-      // No music specified, just copy the video
-      await ffmpeg.exec([
-        "-i",
-        "temp_output.mp4",
-        "-c",
-        "copy",
-        "final_output.mp4",
-      ]);
-    }
 
-    // Prepare final output
-    setProgressMessage("Preparing download...");
-    setSaveProgress(95);
+      // Prepare final output
+      setProgressMessage("Preparing download...");
+      setSaveProgress(95);
 
-    try {
-      // Read the final file
-      const data = await ffmpeg.readFile("final_output.mp4");
-      setSaveProgress(100);
+      try {
+        // Read the final file
+        const data = await ffmpeg.readFile("final_output.mp4");
+        setSaveProgress(100);
 
-      // Write to target file
-      const writable = await fileHandle.createWritable();
-      await writable.write(new Blob([data.buffer], { type: "video/mp4" }));
-      await writable.close();
+        // Write to target file
+        const writable = await fileHandle.createWritable();
+        await writable.write(new Blob([data.buffer], { type: "video/mp4" }));
+        await writable.close();
 
-      // Clean up
+        // Clean up
+        setShowProgress(false);
+        setIsExporting(false);
+        setShowShareNotification(true);
+
+        // Clean up temporary files
+        try {
+          for (const tempFile of tempFiles) {
+            await ffmpeg.deleteFile(tempFile);
+          }
+          await ffmpeg.deleteFile("final_output.mp4");
+        } catch (cleanupError) {
+          console.warn("Final cleanup error (non-critical):", cleanupError);
+        }
+      } catch (finalError) {
+        console.error("Final output error:", finalError);
+        throw new Error(`Failed to save video: ${finalError.message}`);
+      }
+    } catch (error) {
+      console.error("Export error:", error);
       setShowProgress(false);
       setIsExporting(false);
-      setShowShareNotification(true);
+      alert(`Export failed: ${error.message}`);
 
-      // Clean up temporary files
+      // Try to clean up any temp files in case of error
       try {
-        for (const tempFile of tempFiles) {
-          await ffmpeg.deleteFile(tempFile);
+        for (const tempFile of tempFiles || []) {
+          await ffmpeg.deleteFile(tempFile).catch(() => {});
         }
-        await ffmpeg.deleteFile("final_output.mp4");
-      } catch (cleanupError) {
-        console.warn("Final cleanup error (non-critical):", cleanupError);
+      } catch (e) {
+        // Ignore cleanup errors on fail
       }
-    } catch (finalError) {
-      console.error("Final output error:", finalError);
-      throw new Error(`Failed to save video: ${finalError.message}`);
     }
-  } catch (error) {
-    console.error("Export error:", error);
-    setShowProgress(false);
-    setIsExporting(false);
-    alert(`Export failed: ${error.message}`);
-
-    // Try to clean up any temp files in case of error
-    try {
-      for (const tempFile of tempFiles || []) {
-        await ffmpeg.deleteFile(tempFile).catch(() => {});
-      }
-    } catch (e) {
-      // Ignore cleanup errors on fail
-    }
-  }
-};
+  };
   // Handle Save Sessions
   const handleSaveSessionToDb = async (sessionName, isSilent = false) => {
     try {
@@ -3456,53 +3480,58 @@ const handleSaveSession = async (exportSettings) => {
                           height: "100%",
                         }}
                       >
-                        <button
-                          className="image-fit-toggle"
-                          onClick={(e) => {
-                            e.preventDefault(); // Prevent any default behavior
-                            console.log("Image fit button clicked"); // Debug log
-                            setImageFitMode((current) => {
-                              const newMode =
-                                current === "cover" ? "contain" : "cover";
-                              console.log("New image fit mode:", newMode); // Log the new mode
-                              return newMode;
-                            });
-                          }}
-                        >
-                          {imageFitMode === "cover" ? (
-                            <Minimize /> // Adjust the size and color as needed
-                          ) : (
-                            <Expand /> // Use the same icon for both modes, or change the icon if needed
-                          )}
-                        </button>
+                        {/* Toggle button commented out while standardizing on "contain" mode
+<button
+  className="image-fit-toggle"
+  onClick={(e) => {
+    e.preventDefault(); // Prevent any default behavior
+    console.log("Image fit button clicked"); // Debug log
+    setImageFitMode((current) => {
+      const newMode = current === "cover" ? "contain" : "cover";
+      console.log("New image fit mode:", newMode); // Log the new mode
+      return newMode;
+    });
+  }}
+>
+  {imageFitMode === "cover" ? (
+    <Minimize /> // Adjust the size and color as needed
+  ) : (
+    <Expand /> // Use the same icon for both modes, or change the icon if needed
+  )}
+</button>
+*/}
                         {stories[currentIndex] && stories[currentIndex].url ? (
-                        <img
-                        src={stories[currentIndex].url}
-                        alt={`Slide ${currentIndex + 1}`}
-                        className="media-content"
-                        style={{
-                          objectFit: imageFitMode, // Use the current fit mode
-                          width: "100%",
-                          height: "100%",
-                          display: "block",
-                        }}
-                        loading="eager"
-                        onError={(e) => {
-                          console.log("Image failed to load, attempting recovery");
-                          const currentStory = stories[currentIndex];
-                          if (currentStory && currentStory.base64Data) {
-                            const blob = base64ToBlob(currentStory.base64Data);
-                            const newUrl = URL.createObjectURL(blob);
-                            const updatedStories = [...stories];
-                            updatedStories[currentIndex] = {
-                              ...currentStory,
-                              url: newUrl,
-                            };
-                            setStories(updatedStories);
-                            e.target.src = newUrl;
-                          }
-                        }}
-                      />
+                          <img
+                            src={stories[currentIndex].url}
+                            alt={`Slide ${currentIndex + 1}`}
+                            className="media-content"
+                            style={{
+                              objectFit: imageFitMode, // Use the current fit mode
+                              width: "100%",
+                              height: "100%",
+                              display: "block",
+                            }}
+                            loading="eager"
+                            onError={(e) => {
+                              console.log(
+                                "Image failed to load, attempting recovery"
+                              );
+                              const currentStory = stories[currentIndex];
+                              if (currentStory && currentStory.base64Data) {
+                                const blob = base64ToBlob(
+                                  currentStory.base64Data
+                                );
+                                const newUrl = URL.createObjectURL(blob);
+                                const updatedStories = [...stories];
+                                updatedStories[currentIndex] = {
+                                  ...currentStory,
+                                  url: newUrl,
+                                };
+                                setStories(updatedStories);
+                                e.target.src = newUrl;
+                              }
+                            }}
+                          />
                         ) : (
                           <div
                             className="empty-image-placeholder"
@@ -3605,10 +3634,10 @@ const handleSaveSession = async (exportSettings) => {
               />
                
               <ProgressModal
-              isOpen={showProgress}
-              progress={saveProgress}
-              message={progressMessage}
-              onCancel={handleCancelExport}
+                isOpen={showProgress}
+                progress={saveProgress}
+                message={progressMessage}
+                onCancel={handleCancelExport}
               />
               <ShareNotification
                 isVisible={showShareNotification}

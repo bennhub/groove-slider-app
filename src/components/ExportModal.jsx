@@ -94,7 +94,7 @@ const ExportModal = ({
   const exceedsMaxDuration = totalDuration > 180;
 
 // In ExportModal.jsx, add a new state for the export fit mode
-  const [exportFitMode, setExportFitMode] = useState("cover");
+  const [exportFitMode, setExportFitMode] = useState("contain");
 
   // Format time function (for display)
   const formatTime = (seconds) => {
@@ -163,7 +163,7 @@ const ExportModal = ({
       isExportLoopEnabled,
       exportLoopDuration: isExportLoopEnabled ? totalDuration : 0,
       fileName: `${fileName}.mp4`,
-      imageFitMode: exportFitMode, 
+      imageFitMode: "contain", 
     };
 
     try {
@@ -173,9 +173,9 @@ const ExportModal = ({
         isExportLoopEnabled,
         exportLoopDuration: isExportLoopEnabled ? totalDuration : 0,
         fileName: `${fileName}.mp4`,
-        imageFitMode: exportFitMode, 
+        imageFitMode: "contain", 
       };
-      console.log("Exporting with fit mode:", exportFitMode);
+      console.log("Exporting with fit mode: contain");
       const exportedFile = await initiateExport(exportData, exportConfig);
       
       // Close file name prompt and reset states

@@ -28,6 +28,7 @@ import {
   RotateCw,
   Globe,
   MessageSquare,
+  Shuffle,
   ShoppingBag,
   CircleSlash,
   Lock,
@@ -262,11 +263,12 @@ const TapTempo = ({ onBPMChange, isAnalyzing }) => {
 const MusicPanel = ({
   onUpload,
   onBPMChange,
-  currentBPM, // This should be bpm from the parent component
+  currentBPM,
   onStartPointChange,
   audioRef,
   musicUrl,
   musicStartPoint,
+  onClose // New prop
 }) => {
   // State
   const [currentTime, setCurrentTime] = useState(0);
@@ -641,6 +643,33 @@ const MusicPanel = ({
 
   return (
     <div className="music-panel">
+    {/* Add close button as the first element */}
+    {onClose && (
+      <div style={{ 
+        position: 'absolute', 
+        top: '10px', 
+        right: '10px', 
+        zIndex: 10000 
+      }}>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'rgba(0,0,0,0.7)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50%',
+            width: '36px',
+            height: '36px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          <X size={24} />
+        </button>
+      </div>
+    )}
       <div className="music-controls">
         {/* BPM control section with integrated upload button */}
         <div className="bpm-control">
@@ -759,6 +788,7 @@ const MusicPanel = ({
               className="hidden-input"
             />
           </label>*/}
+          
           {/* New Audius Tracks Button */}
           <button
             onClick={() => setIsAudiusModalOpen(true)}
@@ -772,6 +802,7 @@ const MusicPanel = ({
               alignItems: "center",
               textAlign: "left",
               gap: "10px",
+              marginTop: "40px",
             }}
           >
             <svg
@@ -783,7 +814,7 @@ const MusicPanel = ({
             >
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-12.5v9l6-4.5z" />
             </svg>
-            Find Music
+            Add Music
           </button>
 
           {/* Audius Tracks Modal - Simplified */}
@@ -1675,6 +1706,28 @@ const EditPanel = ({
 
   return (
     <div className="edit-panel">
+      {/* Add close button */}
+      {onClose && (
+        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10000 }}>
+          <button 
+            onClick={onClose} 
+            style={{ 
+              background: 'rgba(0,0,0,0.7)', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '50%', 
+              width: '36px', 
+              height: '36px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              cursor: 'pointer' 
+            }}
+          >
+            <X size={24} />
+          </button>
+        </div>
+      )}
       {/* Header with mode-specific content */}
       <div
         className="edit-panel-header"
@@ -1685,6 +1738,7 @@ const EditPanel = ({
           padding: "10px 15px",
           backgroundColor: "#1a1a1a",
           borderBottom: "1px solid rgba(255,255,255,0.1)",
+          marginTop: "40px",
         }}
       >
         {mode === "view" ? (
@@ -1714,8 +1768,9 @@ const EditPanel = ({
                   (e.currentTarget.style.backgroundColor = "transparent")
                 }
               >
-                <MoveVertical size={18} />
+                <Shuffle size={18} />
                 <span>Reorder</span>
+                
               </button>
               <button
                 className="mode-button"
@@ -1743,31 +1798,7 @@ const EditPanel = ({
                 <Trash2 size={18} />
                 <span>Delete</span>
               </button>
-              <button
-                className="close-button"
-                onClick={onClose}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "white",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "30px",
-                  height: "30px",
-                  borderRadius: "50%",
-                }}
-                onMouseOver={(e) =>
-                  (e.currentTarget.style.backgroundColor =
-                    "rgba(255,255,255,0.1)")
-                }
-                onMouseOut={(e) =>
-                  (e.currentTarget.style.backgroundColor = "transparent")
-                }
-              >
-                <X size={20} />
-              </button>
+  
             </div>
           </>
         ) : mode === "reorder" ? (
@@ -2135,6 +2166,26 @@ const BottomMenu = ({
     <div className="bottom-menu w-full flex flex-col items-stretch">
       {showDurationPanel && (
         <div className="duration-panel">
+    {/* Close button */}
+    <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10000 }}>
+      <button 
+        onClick={() => setShowDurationPanel(false)} 
+        style={{ 
+          background: 'rgba(0,0,0,0.7)', 
+          color: 'white', 
+          border: 'none', 
+          borderRadius: '50%', 
+          width: '36px', 
+          height: '36px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          cursor: 'pointer' 
+        }}
+      >
+        <X size={24} />
+      </button>
+    </div>
           <div className="duration-controls">
             <h3>Bar-Based Slide Transitions</h3>
             <div className="bar-options">
@@ -2184,17 +2235,18 @@ Loop Slideshow
           </div>
         </div>
       )}
-      {showMusicPanel && (
-        <MusicPanel
-          audioRef={audioRef}
-          onUpload={onMusicUpload}
-          onBPMChange={onBPMChange}
-          currentBPM={bpm}
-          onStartPointChange={onStartPointChange}
-          musicStartPoint={musicStartPoint}
-          musicUrl={musicUrl}
-        />
-      )}
+   {showMusicPanel && (
+  <MusicPanel
+    audioRef={audioRef}
+    onUpload={onMusicUpload}
+    onBPMChange={onBPMChange}
+    currentBPM={bpm}
+    onStartPointChange={onStartPointChange}
+    musicStartPoint={musicStartPoint}
+    musicUrl={musicUrl}
+    onClose={() => setShowMusicPanel(false)} // Add this prop
+  />
+)}
       {showEditPanel && (
         <EditPanel
           stories={stories}

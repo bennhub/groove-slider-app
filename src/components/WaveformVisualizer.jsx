@@ -207,6 +207,9 @@ const WaveformVisualizer = ({
   const [followPlayhead, setFollowPlayhead] = useState(false);
   const [sliderDragging, setSliderDragging] = useState(false);
   const [loadingStage, setLoadingStage] = useState('initial');
+  // New state variables for loading progress
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState('Initializing...');
 
   // Refs for tracking
   const loadedAudioUrlRef = useRef(null);
@@ -231,87 +234,171 @@ const WaveformVisualizer = ({
   
     const loadAudioProgressively = async () => {
       setLoadingStage('initial');
+      setLoadingProgress(5);
+      setLoadingMessage('Initializing...');
       
       // First, try cached buffer
       const cachedBuffer = await getStoredAudioBuffer(audioUrl);
       if (cachedBuffer) {
         setLoadingStage('cached');
-        setAudioBuffer(cachedBuffer.buffer);
-        setDuration(cachedBuffer.buffer.duration);
+        setLoadingProgress(70);
+        setLoadingMessage('Loading from cache...');
         
-        // Restore cached state if available
-        const cachedState = await getVisualizerState(audioUrl);
-        if (cachedState) {
-          if (cachedState.zoomLevel) {
-            setZoomLevel(cachedState.zoomLevel);
+        // Simulate progress for cached data
+        setTimeout(() => {
+          setLoadingProgress(90);
+          setLoadingMessage('Processing audio data...');
+        }, 300);
+        
+        setTimeout(() => {
+          setLoadingProgress(90);
+          setLoadingMessage('Processing audio data...');
+        }, 300);
+        
+        setTimeout(async () => {  // Add 'async' keyword here
+          setLoadingProgress(100);
+          setLoadingMessage('Ready to play');
+          
+          setAudioBuffer(cachedBuffer.buffer);
+          setDuration(cachedBuffer.buffer.duration);
+          
+          // Restore cached state if available
+          const cachedState = await getVisualizerState(audioUrl); 
+          if (cachedState) {
+            if (cachedState.zoomLevel) {
+              setZoomLevel(cachedState.zoomLevel);
+            }
+            if (cachedState.waveformOffset !== undefined) {
+              setWaveformOffset(cachedState.waveformOffset);
+            }
+            if (onStartPointChange &&
+                cachedState.startPoint !== undefined &&
+                Math.abs(cachedState.startPoint - musicStartPoint) > 0.001) {
+              onStartPointChange(cachedState.startPoint);
+            }
           }
-          if (cachedState.waveformOffset !== undefined) {
-            setWaveformOffset(cachedState.waveformOffset);
-          }
-          if (onStartPointChange &&
-              cachedState.startPoint !== undefined &&
-              Math.abs(cachedState.startPoint - musicStartPoint) > 0.001) {
-            onStartPointChange(cachedState.startPoint);
-          }
-        }
-  
-        setIsLoading(false);
+        
+          setIsLoading(false);
+        }, 600);
+        
         return;
       }
-  
+    
       // Start streaming  
       setLoadingStage('streaming');
-  
+      setLoadingProgress(10);
+      setLoadingMessage('Downloading audio...');
+    
       try {
         let response;
         let arrayBuffer;
-  
+        let contentLength = 0;
+        let receivedLength = 0;
+    
         // For Audius streaming, use a more efficient strategy
         if (audioUrl.includes('audius.co/')) {
           const trackId = extractTrackIdFromUrl(audioUrl);
           const streamUrl = `https://lingering-surf-27dd.benhayze.workers.dev/${trackId}`;
-  
+    
+          // First, do a HEAD request to get content length if possible
+          try {
+            const headResponse = await fetch(streamUrl, { method: 'HEAD' });
+            contentLength = parseInt(headResponse.headers.get('Content-Length') || '0');
+          } catch (e) {
+            console.log('HEAD request failed, continuing without content length');
+          }
+    
+          setLoadingProgress(15);
+          setLoadingMessage('Streaming audio...');
+          
           response = await fetch(streamUrl, {
             headers: {
               'Accept': 'audio/mpeg',
               'Range': 'bytes=0-500000' // First 500KB
             }
           });
-  
+    
           arrayBuffer = await response.arrayBuffer();
-          // Process with minimal computational overhead
+          receivedLength = arrayBuffer.byteLength;
+          
+          // Update progress
+          setLoadingProgress(30);
+          setLoadingMessage('Processing initial audio data...');
+          
         } else {  
+          setLoadingProgress(15);
+          setLoadingMessage('Hang on, Loading & Analyzing your Music');
+          
           response = await fetch(audioUrl, {
             headers: { 'Range': 'bytes=0-100000' } // Fetch first 100KB
           });
-  
+    
           arrayBuffer = await response.arrayBuffer();
+          receivedLength = arrayBuffer.byteLength;
+          
+          setLoadingProgress(25);
+          setLoadingMessage('Processing audio preview...');
         }
         
         // Do initial waveform generation with partial data
+        setLoadingProgress(40);
+        setLoadingMessage('Decoding audio data...');
+        
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const partialBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        setLoadingProgress(60);
+        setLoadingMessage('Generating waveform...');
         
         setAudioBuffer(partialBuffer);
         setDuration(partialBuffer.duration);
         setLoadingStage('basic-waveform');
-        setIsLoading(false);
-  
+        
+        setLoadingProgress(75);
+        setLoadingMessage('Loading complete data...');
+        
+        // Start loading full version in background but show the waveform
+        setTimeout(async () => {
+          setLoadingProgress(100);
+          setLoadingMessage('Ready to play');
+          setIsLoading(false);
+          
+          // No need to set audio buffer or duration again
+          // They're already set with partialBuffer above
+          
+          // If you need to restore any state, you can do it here
+          const cachedState = await getVisualizerState(audioUrl);
+          if (cachedState) {
+            if (cachedState.zoomLevel) {
+              setZoomLevel(cachedState.zoomLevel);
+            }
+            if (cachedState.waveformOffset !== undefined) {
+              setWaveformOffset(cachedState.waveformOffset);
+            }
+            // Can add more state restoration if needed
+          }
+        }, 500);
+    
         // Continue full load in background
+        setLoadingMessage('Downloading full audio in background...');
         const fullResponse = await fetch(audioUrl);  
         const fullArrayBuffer = await fullResponse.arrayBuffer();
+        
+        setLoadingMessage('Processing full audio data...');
         const fullBuffer = await audioContext.decodeAudioData(fullArrayBuffer);
-  
+    
         setAudioBuffer(fullBuffer);
         setDuration(fullBuffer.duration);
         setLoadingStage('complete');
         
         // Store the decoded buffer for future use
         await storeAudioBuffer(audioUrl, fullBuffer);
-  
+    
       } catch (error) {
         console.error("Loading failed:", error);
         setLoadingStage('error'); 
+        setLoadingProgress(0);
+        setLoadingMessage('Error loading audio');
         setIsLoading(false);
       }
     };
@@ -1049,13 +1136,69 @@ const WaveformVisualizer = ({
   return (
     <div className="waveform-container" ref={containerRef}>
         {isLoading ? (
-        <div className="waveform-loading">
-          {loadingStage === 'initial' && 'Loading...'}
-          {loadingStage === 'cached' && 'Loading from cache...'}
-          {loadingStage === 'streaming' && 'Please Wait, Analyzing...'}
-          {loadingStage === 'basic-waveform' && 'Generating preview...'}
-        </div>
-      ) : (
+  <div className="waveform-loading" style={{ 
+    display: "flex", 
+    flexDirection: "column", 
+    alignItems: "center",
+    justifyContent: "center",
+    height: "150px",
+    width: "100%",
+    background: "#121212",
+    borderRadius: "8px",
+    padding: "20px"
+  }}>
+    {/* Progress bar */}
+    <div style={{
+      width: "90%",
+      background: "#333",
+      borderRadius: "4px",
+      overflow: "hidden",
+      height: "15px",
+      margin: "10px 0 15px 0"
+    }}>
+      <div style={{
+        width: `${loadingProgress}%`,
+        background: "linear-gradient(to right, #FF8400, #FFD700)",
+        height: "100%",
+        borderRadius: "4px",
+        transition: "width 0.3s ease-in-out"
+      }}></div>
+    </div>
+    
+    {/* Loading message */}
+    <div style={{
+      color: "#FFD700",
+      fontSize: "16px",
+      fontWeight: "500",
+      textAlign: "center"
+    }}>
+      {loadingMessage}
+    </div>
+    
+    {/* Loading indicator */}
+    <div style={{
+      fontSize: "14px",
+      color: "#AAA",
+      marginTop: "10px"
+    }}>
+      {loadingProgress}% Complete
+    </div>
+    
+    {/* Additional context based on loading stage */}
+    <div style={{
+      fontSize: "12px", 
+      color: "#888",
+      marginTop: "5px",
+      textAlign: "center",
+      maxWidth: "80%"
+    }}>
+      {loadingStage === 'cached' && 'Using previously cached audio for faster loading'}
+      {loadingStage === 'streaming' && 'Just Catching the Groove, May Take a Moment'}
+      {loadingStage === 'basic-waveform' && 'Creating audio visualization'}
+      {loadingStage === 'error' && 'There was an error loading the audio. Please try again.'}
+    </div>
+  </div>
+) : (
         <>
           <div
             className="waveform-canvas-container"
@@ -1466,6 +1609,15 @@ const WaveformVisualizer = ({
       )}
     </div>
   );
+};
+// Auxiliary function to extract track ID from Audius URL if needed
+const extractTrackIdFromUrl = (url) => {
+  // Simple implementation - adjust as needed for your actual URL structure
+  if (url.includes('audius.co/')) {
+    const parts = url.split('/');
+    return parts[parts.length - 1];
+  }
+  return null;
 };
 
 export default WaveformVisualizer;

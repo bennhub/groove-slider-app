@@ -403,139 +403,201 @@ const MusicPanel = ({
     // Check if there's a drift from the intended time when playback starts
     if (isPlaying && intendedTimeRef.current !== null) {
       const drift = Math.abs(precise - intendedTimeRef.current);
-
-      // If there's a significant drift (over 5ms) at the beginning of playback
-      if (drift > 0.005 && precise < intendedTimeRef.current + 0.5) {
-        console.log(`Correcting drift of ${drift.toFixed(6)}s`);
-
-        // Force audio back to intended position
-        controlsRef.current.currentTime = intendedTimeRef.current;
-
-        // Also sync the main audio ref
+    
+      // Only correct significant drift (increased threshold to reduce corrections)
+      if (drift > 0.1 && precise < intendedTimeRef.current + 0.5) {
+        console.log(`Detected drift of ${drift.toFixed(6)}s - correcting smoothly`);
+        
+        // Instead of abruptly changing currentTime during playback, 
+        // we'll mark it for correction when playback is paused/resumed
         if (audioRef.current) {
-          audioRef.current.currentTime = intendedTimeRef.current;
+          // Store the drift information but don't correct immediately during playback
+          audioRef.current.dataset.pendingCorrection = intendedTimeRef.current;
         }
       } else if (precise > intendedTimeRef.current + 0.5) {
-        // Once we're half a second past the intended start point,
-        // we can stop checking for startup drift
         intendedTimeRef.current = null;
       }
     }
   };
 
   // Setup enhanced event listeners
-  useEffect(() => {
-    if (controlsRef.current && audioRef.current) {
-      // Set up regular timeupdate listener
-      controlsRef.current.addEventListener("timeupdate", handleTimeUpdate);
+  // Setup enhanced event listeners with reduced synchronization frequency
+useEffect(() => {
+  if (controlsRef.current && audioRef.current) {
+    // Set up regular timeupdate listener
+    controlsRef.current.addEventListener("timeupdate", handleTimeUpdate);
 
-      // Keep main audio in sync
-      const syncAudioRefs = () => {
-        audioRef.current.currentTime = controlsRef.current.currentTime;
-      };
-
-      // Listen for timeupdate events
-      controlsRef.current.addEventListener("timeupdate", syncAudioRefs);
-
-      // Listen for seeking events (high precision for fine adjustments)
-      controlsRef.current.addEventListener("seeking", () => {
-        // Cancel any previous timeupdate forcing
-        if (timeUpdateRef.current) {
-          clearInterval(timeUpdateRef.current);
-        }
-
-        // Force timeupdate events during seeking for more responsive UI
-        timeUpdateRef.current = setInterval(() => {
-          // Manually trigger the time update handling
-          handleTimeUpdate();
-        }, 10); // Update every 10ms during seeking
-      });
-
-      controlsRef.current.addEventListener("seeked", () => {
-        // Clean up the forced timeupdate interval
-        if (timeUpdateRef.current) {
-          clearInterval(timeUpdateRef.current);
-          timeUpdateRef.current = null;
-        }
-      });
-
-      controlsRef.current.addEventListener("loadedmetadata", () => {
-        setDuration(controlsRef.current.duration);
-      });
-
-      return () => {
-        // Clean up all event listeners
-        if (controlsRef.current) {
-          controlsRef.current.removeEventListener(
-            "timeupdate",
-            handleTimeUpdate
-          );
-          controlsRef.current.removeEventListener("timeupdate", syncAudioRefs);
-          controlsRef.current.removeEventListener("seeking", () => {});
-          controlsRef.current.removeEventListener("seeked", () => {});
-        }
-
-        if (timeUpdateRef.current) {
-          clearInterval(timeUpdateRef.current);
-        }
-      };
-    }
-  }, [audioRef, controlsRef, isPlaying]);
-
-  // Updated handlePlayPause function
-  const handlePlayPause = () => {
-    // If currently playing, stop everything
-    if (isPlaying) {
-      console.log("Stopping playback");
-
-      // Explicitly clear the interval
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-
-      // Stop audio if it exists
-      if (audioRef.current) {
-        try {
-          audioRef.current.pause();
-        } catch (e) {
-          console.error("Error pausing audio:", e);
+    // Keep main audio in sync but less frequently to avoid buffer issues
+    let lastSyncTime = 0;
+    const syncAudioRefs = () => {
+      // Only sync when necessary and not during playback
+      const currentTime = controlsRef.current.currentTime;
+      const timeSinceLastSync = Date.now() - lastSyncTime;
+      
+      // Limit sync frequency to reduce audio interruptions
+      // Only sync if it's been at least 500ms since last sync or if the difference is large
+      if (timeSinceLastSync > 500 || Math.abs(audioRef.current.currentTime - currentTime) > 0.5) {
+        // Only sync when paused to avoid playback interruptions
+        if (audioRef.current.paused && controlsRef.current.paused) {
+          audioRef.current.currentTime = currentTime;
+          lastSyncTime = Date.now();
         }
       }
+    };
 
-      // Update state last
-      setIsPlaying(false);
-      return;
+    // Listen for events where sync makes sense
+    controlsRef.current.addEventListener("seeked", syncAudioRefs);
+    controlsRef.current.addEventListener("pause", syncAudioRefs);
+    // Remove timeupdate sync which is too frequent
+    // controlsRef.current.addEventListener("timeupdate", syncAudioRefs);
+
+    // Listen for seeking events (high precision for fine adjustments)
+    controlsRef.current.addEventListener("seeking", () => {
+      // Cancel any previous timeupdate forcing
+      if (timeUpdateRef.current) {
+        clearInterval(timeUpdateRef.current);
+      }
+
+      // Force timeupdate events during seeking for more responsive UI
+      timeUpdateRef.current = setInterval(() => {
+        // Manually trigger the time update handling
+        handleTimeUpdate();
+      }, 10); // Update every 10ms during seeking
+    });
+
+    controlsRef.current.addEventListener("seeked", () => {
+      // Clean up the forced timeupdate interval
+      if (timeUpdateRef.current) {
+        clearInterval(timeUpdateRef.current);
+        timeUpdateRef.current = null;
+      }
+    });
+
+    controlsRef.current.addEventListener("loadedmetadata", () => {
+      setDuration(controlsRef.current.duration);
+    });
+
+    return () => {
+      // Clean up all event listeners
+      if (controlsRef.current) {
+        controlsRef.current.removeEventListener(
+          "timeupdate",
+          handleTimeUpdate
+        );
+        controlsRef.current.removeEventListener("seeked", syncAudioRefs);
+        controlsRef.current.removeEventListener("pause", syncAudioRefs);
+        controlsRef.current.removeEventListener("seeking", () => {});
+        controlsRef.current.removeEventListener("seeked", () => {});
+      }
+
+      if (timeUpdateRef.current) {
+        clearInterval(timeUpdateRef.current);
+      }
+    };
+  }
+}, [audioRef, controlsRef, isPlaying]);
+
+// Updated handlePlayPause function with smoother transitions
+const handlePlayPause = () => {
+  // If currently playing, stop everything
+  if (isPlaying) {
+    console.log("Stopping playback");
+
+    // Explicitly clear the interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
 
-    // Starting playback - reset to first slide if at the end
-    if (currentIndex === stories.length - 1) {
-      setCurrentIndex(0);
-    }
-
-    console.log("Starting playback");
-
-    // Start audio only if we have music
-    if (musicUrl) {
+    // Stop audio if it exists - implement a small fade out to avoid clicks
+    if (audioRef.current) {
       try {
-        // Create a new audio element each time
-        const audio = new Audio(musicUrl);
-        audio.currentTime = musicStartPoint;
-        audioRef.current = audio;
-
-        // Don't await this - it might fail and we don't want to block
-        audio.play().catch((err) => {
-          console.error("Audio playback failed:", err);
-          console.log("Continuing with slideshow without audio");
-        });
+        // For a smoother stop, simply pause without any fancy effects
+        // This alone can reduce clicks by avoiding abrupt stops
+        audioRef.current.pause();
       } catch (e) {
-        console.error("Error setting up audio:", e);
-        // Continue anyway
+        console.error("Error pausing audio:", e);
       }
-    } else {
-      console.log("No music URL, running slideshow without audio");
     }
 
+    // Update state last
+    setIsPlaying(false);
+    return;
+  }
+
+  // Starting playback - reset to first slide if at the end
+  if (currentIndex === stories.length - 1) {
+    setCurrentIndex(0);
+  }
+
+  console.log("Starting playback");
+
+  // Start audio only if we have music
+  if (musicUrl) {
+    try {
+      // IMPORTANT CHANGE: Reuse existing audio element instead of creating new one
+      if (!audioRef.current || audioRef.current.src !== musicUrl) {
+        // Only create a new Audio element if needed
+        const audio = new Audio();
+        audio.preload = "auto"; // Important for buffering
+        audio.src = musicUrl;
+        audio.currentTime = musicStartPoint;
+        
+        // Store the audio reference immediately
+        audioRef.current = audio;
+        
+        // Show loading/buffering indicator
+        setIsAnalyzing(true); // or whatever loading state indicator you use
+        
+        // Ensure proper buffering before starting playback
+        ensureAudioBuffering(audio)
+          .then(() => {
+            console.log("Audio sufficiently buffered, starting playback");
+            setIsAnalyzing(false); // Hide loading indicator
+            
+            // Now start playback with properly buffered audio
+            startPlaybackWithAudio(audio);
+          })
+          .catch((err) => {
+            console.warn("Audio buffer warning:", err);
+            setIsAnalyzing(false); // Hide loading indicator
+            
+            // Try to play despite buffering issues, with a small delay
+            setTimeout(() => {
+              startPlaybackWithAudio(audio);
+            }, 100);
+          });
+      } else {
+        // Reuse existing audio element, but still ensure buffering from new position
+        audioRef.current.currentTime = musicStartPoint;
+        
+        // Short buffering check for position change
+        setIsAnalyzing(true);
+        
+        ensureAudioBuffering(audioRef.current)
+          .then(() => {
+            setIsAnalyzing(false);
+            startPlaybackWithAudio(audioRef.current);
+          })
+          .catch(() => {
+            setIsAnalyzing(false);
+            // Still try to play even if buffering isn't ideal
+            startPlaybackWithAudio(audioRef.current);
+          });
+      }
+    } catch (e) {
+      console.error("Error setting up audio:", e);
+      setIsAnalyzing(false);
+      // Continue without audio
+      startPlaybackWithoutAudio();
+    }
+  } else {
+    console.log("No music URL, running slideshow without audio");
+    startPlaybackWithoutAudio();
+  }
+  
+  // Helper function to start playback with audio
+  function startPlaybackWithAudio(audio) {
     // Set up interval for slideshow
     const intervalTime = duration * 1000;
     console.log(`Setting up interval with duration: ${intervalTime}ms`);
@@ -563,11 +625,47 @@ const MusicPanel = ({
         return (prev + 1) % stories.length;
       });
     }, intervalTime);
+    
+    // Try to play the audio with a small delay to allow buffering
+    setTimeout(() => {
+      audio.play().catch((err) => {
+        console.error("Audio playback failed:", err);
+        console.log("Continuing with slideshow without audio");
+      });
+      setIsPlaying(true);
+    }, 50);
+  }
+  
+  // Helper function to start playback without audio
+  function startPlaybackWithoutAudio() {
+    // Set up interval for slideshow
+    const intervalTime = duration * 1000;
+    console.log(`Setting up interval with duration: ${intervalTime}ms`);
 
-    // Update the playing state
+    // Clear any existing interval first
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    // Start a new interval
+    intervalRef.current = setInterval(() => {
+      setCurrentIndex((prev) => {
+        if (!isLoopingEnabled && prev >= stories.length - 1) {
+          // At the end and not looping
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          setIsPlaying(false);
+          return prev;
+        }
+        return (prev + 1) % stories.length;
+      });
+    }, intervalTime);
+    
     setIsPlaying(true);
-  };
-
+  }
+};
   /**
    * Format time with millisecond precision
    */

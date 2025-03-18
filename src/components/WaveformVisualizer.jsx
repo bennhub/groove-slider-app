@@ -189,6 +189,76 @@ const getVisualizerState = async (audioUrl) => {
   }
 };
 
+// Audio Buffer helper functions
+const ensureAudioBuffering = (audioElement) => {
+  return new Promise((resolve, reject) => {
+    if (!audioElement) {
+      reject(new Error("No audio element provided"));
+      return;
+    }
+    
+    // If already buffered enough, resolve immediately
+    if (isAudioBufferedEnough(audioElement)) {
+      resolve(true);
+      return;
+    }
+    
+    // Set up event listeners for buffering
+    const onCanPlay = () => {
+      cleanup();
+      resolve(true);
+    };
+    
+    const onError = (e) => {
+      cleanup();
+      reject(new Error(`Audio buffering error: ${e.message}`));
+    };
+    
+    const onTimeout = () => {
+      cleanup();
+      // If some buffering has happened, continue anyway
+      if (isAudioBufferedEnough(audioElement)) {
+        resolve(true);
+      } else {
+        reject(new Error("Audio buffering timeout"));
+      }
+    };
+    
+    // Clean up event listeners
+    const cleanup = () => {
+      audioElement.removeEventListener('canplaythrough', onCanPlay);
+      audioElement.removeEventListener('error', onError);
+      clearTimeout(timeoutId);
+    };
+    
+    // Set up event listeners
+    audioElement.addEventListener('canplaythrough', onCanPlay);
+    audioElement.addEventListener('error', onError);
+    
+    // Set a timeout in case buffering takes too long
+    const timeoutId = setTimeout(onTimeout, 5000);
+    
+    // Start buffering
+    if (audioElement.readyState < 3) { // HAVE_FUTURE_DATA
+      // If not loaded, trigger loading
+      audioElement.load();
+    }
+  });
+};
+
+// Helper to check if audio is buffered enough
+const isAudioBufferedEnough = (audioElement) => {
+  if (!audioElement || !audioElement.buffered || audioElement.buffered.length === 0) {
+    return false;
+  }
+  
+  // Check if we have at least 5 seconds buffered from the current position
+  const currentTime = audioElement.currentTime;
+  const bufferedEnd = audioElement.buffered.end(audioElement.buffered.length - 1);
+  
+  return bufferedEnd - currentTime >= 5; // At least 5 seconds ahead
+};
+
 const WaveformVisualizer = ({
   audioUrl,
   onStartPointChange,
@@ -803,42 +873,65 @@ const WaveformVisualizer = ({
     // Prevent default behavior
     e.preventDefault();
     e.stopPropagation();
-
+  
     if (!audioBuffer || !canvasRef.current || isDragging) return;
-
+  
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-
+  
     // Get coordinates for both mouse and touch events
     const clientX = e.type.includes("touch")
       ? e.touches
         ? e.touches[0].clientX
         : e.changedTouches[0].clientX
       : e.clientX;
-
+  
     // Calculate the exact pixel position relative to the canvas
     const clickX = clientX - rect.left;
-
+  
     // Get current visible time range based on zoom level and offset
     const visibleDuration = duration / zoomLevel;
     const startTime = waveformOffset;
-
+  
     // Calculate precise time based on the click position within the visible window
     const clickRatio = clickX / canvas.width;
     const preciseTime = startTime + clickRatio * visibleDuration;
-
+  
     // Apply millisecond precision and ensure within bounds
     const roundedTime = Math.round(preciseTime * 1000) / 1000;
     const boundedTime = Math.max(0, Math.min(duration, roundedTime));
-
-    // Update audio position
-    if (audioRef?.current) {
-      audioRef.current.currentTime = boundedTime;
+  
+    // Check if audio is playing
+    const isAudioPlaying = audioRef?.current && !audioRef.current.paused;
+    
+    // If playing, smoothly transition to new position
+    if (isAudioPlaying) {
+      // Briefly pause to reduce clicking
+      audioRef.current.pause();
+      
+      // Use a short timeout before changing position and resuming
+      setTimeout(() => {
+        // Update audio position
+        audioRef.current.currentTime = boundedTime;
+        
+        // Update playback position state immediately
+        setCurrentPlaybackTime(boundedTime);
+        
+        // Resume playback after a tiny delay to allow the buffer to stabilize
+        setTimeout(() => {
+          audioRef.current.play().catch(err => console.error("Playback error:", err));
+        }, 30);
+      }, 20);
+    } else {
+      // If not playing, directly update position
+      if (audioRef?.current) {
+        audioRef.current.currentTime = boundedTime;
+      }
+      
+      // Update playback position state immediately
+      setCurrentPlaybackTime(boundedTime);
     }
-
-    // Update playback position state immediately
-    setCurrentPlaybackTime(boundedTime);
-
+  
     // Debug logging to verify accuracy
     console.log({
       zoomLevel,
@@ -850,7 +943,7 @@ const WaveformVisualizer = ({
       calculatedTime: preciseTime.toFixed(3),
       finalTime: boundedTime.toFixed(3),
     });
-
+  
     // Optional - save state
     if (audioUrl) {
       storeVisualizerState(audioUrl, {
@@ -1001,78 +1094,127 @@ const WaveformVisualizer = ({
   };
 
   // Set start point to current playback position
-  const handleSetStartPoint = () => {
-    if (!audioRef?.current || !onStartPointChange || !audioUrl) return;
+  // Modified handleSetStartPoint with smoother transitions
+const handleSetStartPoint = () => {
+  if (!audioRef?.current || !onStartPointChange || !audioUrl) return;
 
-    // Get current position with high precision
-    const startTime = audioRef.current.currentTime;
+  // Save playback state
+  const wasPlaying = !audioRef.current.paused;
+  
+  // Briefly pause if playing
+  if (wasPlaying) {
+    audioRef.current.pause();
+  }
 
-    // Round to millisecond precision
-    const preciseTime = Math.round(startTime * 1000) / 1000;
+  // Get current position with high precision
+  const startTime = audioRef.current.currentTime;
 
-    // Notify parent component
-    onStartPointChange(preciseTime);
+  // Round to millisecond precision
+  const preciseTime = Math.round(startTime * 1000) / 1000;
 
-    // Immediately save the start point
-    console.log(`Setting start point to ${preciseTime}`);
-    storeAudioPositions(audioUrl, {
-      startPoint: preciseTime,
-    })
-      .then(() => {
-        console.log("Start point saved successfully");
-      })
-      .catch((err) => {
-        console.error("Failed to save start point:", err);
-      });
-  };
+  // Notify parent component
+  onStartPointChange(preciseTime);
 
-  // Frame forward/backward navigation with improved precision
-  const adjustStartPointByMs = (milliseconds) => {
-    if (!audioBuffer || !onStartPointChange || !audioUrl) return;
-
-    // Convert ms to seconds (1ms = 0.001s)
-    const timeChange = milliseconds * 0.001;
-
-    // Calculate new start point time with millisecond precision
-    const newTime = Math.max(
-      0,
-      Math.min(duration, musicStartPoint + timeChange)
-    );
-
-    // Round to millisecond precision
-    const preciseTime = Math.round(newTime * 1000) / 1000;
-
-    // Update start point
-    onStartPointChange(preciseTime);
-
-    // Immediately save the adjusted start point
-    console.log(`Adjusting start point to ${preciseTime}`);
-    storeAudioPositions(audioUrl, {
-      startPoint: preciseTime,
-    })
-      .then(() => {
-        console.log("Adjusted start point saved successfully");
-      })
-      .catch((err) => {
-        console.error("Failed to save adjusted start point:", err);
-      });
-
-    // If zoomed in, make sure adjusted position is visible
-    if (zoomLevel > 1) {
-      const visibleDuration = duration / zoomLevel;
-      const startTime = waveformOffset;
-      const endTime = startTime + visibleDuration;
-
-      // If new position is outside visible area, adjust the view
-      if (newTime < startTime || newTime > endTime) {
-        const newOffset = Math.max(
-          0,
-          Math.min(duration - visibleDuration, newTime - visibleDuration / 2)
-        );
-        setWaveformOffset(newOffset);
+  // Immediately save the start point
+  console.log(`Setting start point to ${preciseTime}`);
+  storeAudioPositions(audioUrl, {
+    startPoint: preciseTime,
+  })
+    .then(() => {
+      console.log("Start point saved successfully");
+      
+      // Resume playback after a short delay if it was playing
+      if (wasPlaying) {
+        setTimeout(() => {
+          audioRef.current.play()
+            .catch(err => console.error("Error resuming playback:", err));
+        }, 50);
       }
+    })
+    .catch((err) => {
+      console.error("Failed to save start point:", err);
+      
+      // Resume playback even if save failed
+      if (wasPlaying) {
+        setTimeout(() => {
+          audioRef.current.play()
+            .catch(err => console.error("Error resuming playback:", err));
+        }, 50);
+      }
+    });
+};
+  // Frame forward/backward navigation with improved precision
+  // Modified adjustStartPointByMs to avoid audio clicks
+const adjustStartPointByMs = (milliseconds) => {
+  if (!audioBuffer || !onStartPointChange || !audioUrl) return;
+
+  // Save current playback state
+  const wasPlaying = audioRef.current && !audioRef.current.paused;
+  
+  // If playing, pause briefly for this adjustment
+  if (wasPlaying) {
+    audioRef.current.pause();
+  }
+
+  // Convert ms to seconds (1ms = 0.001s)
+  const timeChange = milliseconds * 0.001;
+
+  // Calculate new start point time with millisecond precision
+  const newTime = Math.max(
+    0,
+    Math.min(duration, musicStartPoint + timeChange)
+  );
+
+  // Round to millisecond precision
+  const preciseTime = Math.round(newTime * 1000) / 1000;
+
+  // Update start point
+  onStartPointChange(preciseTime);
+
+  // Set the new time in the audio element
+  setTimeout(() => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = preciseTime;
     }
-  };
+    
+    // Resume playback if it was playing before
+    if (wasPlaying) {
+      setTimeout(() => {
+        audioRef.current.play().catch(err => 
+          console.error("Error resuming playback:", err)
+        );
+      }, 30); // Small delay to avoid click
+    }
+  }, 20);
+
+  // Immediately save the adjusted start point
+  console.log(`Adjusting start point to ${preciseTime}`);
+  storeAudioPositions(audioUrl, {
+    startPoint: preciseTime,
+  })
+    .then(() => {
+      console.log("Adjusted start point saved successfully");
+    })
+    .catch((err) => {
+      console.error("Failed to save adjusted start point:", err);
+    });
+
+  // If zoomed in, make sure adjusted position is visible
+  if (zoomLevel > 1) {
+    const visibleDuration = duration / zoomLevel;
+    const startTime = waveformOffset;
+    const endTime = startTime + visibleDuration;
+
+    // If new position is outside visible area, adjust the view
+    if (newTime < startTime || newTime > endTime) {
+      const newOffset = Math.max(
+        0,
+        Math.min(duration - visibleDuration, newTime - visibleDuration / 2)
+      );
+      setWaveformOffset(newOffset);
+    }
+  }
+};
 
   // Direct time input with improved validation
   const handleDirectTimeInput = () => {

@@ -162,7 +162,7 @@ const GrooveGalleryLanding = ({
               <Settings />
             </span>
           </button>
-          <h1 className="app-title">Groove Slider v01.5</h1>
+          <h1 className="app-title">Groove Slider v01.6</h1>
           {/* Always visible close button */}
           <button className="close-landing-button" onClick={onClose}>
             <X size={24} />
@@ -421,7 +421,6 @@ const MusicPanel = ({
   };
 
   // Setup enhanced event listeners
-  // Setup enhanced event listeners with reduced synchronization frequency
 useEffect(() => {
   if (controlsRef.current && audioRef.current) {
     // Set up regular timeupdate listener
@@ -512,11 +511,36 @@ const handlePlayPause = () => {
     // Stop audio if it exists - implement a small fade out to avoid clicks
     if (audioRef.current) {
       try {
-        // For a smoother stop, simply pause without any fancy effects
-        // This alone can reduce clicks by avoiding abrupt stops
-        audioRef.current.pause();
+        // If the Web Audio API is available, use a short fade out
+        if (window.AudioContext || window.webkitAudioContext) {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const source = audioContext.createMediaElementSource(audioRef.current);
+          const gainNode = audioContext.createGain();
+          
+          // Connect the audio through the gain node
+          source.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          // Create a quick fade out (30ms is usually enough to avoid clicks)
+          const now = audioContext.currentTime;
+          gainNode.gain.setValueAtTime(1, now);
+          gainNode.gain.linearRampToValueAtTime(0, now + 0.03);
+          
+          // Pause after the fade out
+          setTimeout(() => {
+            audioRef.current.pause();
+            // Disconnect to avoid issues with future play calls
+            source.disconnect();
+            gainNode.disconnect();
+          }, 35); // Slightly longer than the fade
+        } else {
+          // Fallback if Web Audio API is not available
+          audioRef.current.pause();
+        }
       } catch (e) {
         console.error("Error pausing audio:", e);
+        // Fallback to normal pause
+        audioRef.current.pause();
       }
     }
 
@@ -530,7 +554,6 @@ const handlePlayPause = () => {
     setCurrentIndex(0);
   }
 
-  console.log("Starting playback");
 
   // Start audio only if we have music
   if (musicUrl) {

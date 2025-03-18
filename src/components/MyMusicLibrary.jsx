@@ -253,10 +253,11 @@ const MyMusicLibrary = ({ onTrackSelect, onClose }) => {
                     backgroundColor: 'rgba(0,0,0,0.6)',
                     border: '2px solid white',
                     color: 'white',
-                    display: 'flex',
+                    display: 'none',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: analyzingBpmTrackId === track.id ? 'wait' : 'pointer'
+                    cursor: analyzingBpmTrackId === track.id ? 'wait' : 'pointer',
+
                   }}
                 >
                   {analyzingBpmTrackId === track.id ? (
@@ -281,8 +282,8 @@ const MyMusicLibrary = ({ onTrackSelect, onClose }) => {
                     handlePreview(track.id);
                   }}
                   style={{
-                    width: '35px', // Reduced from 40px
-                    height: '35px', // Reduced from 40px
+                    width: '60px', // Reduced from 40px
+                    height: '60px', // Reduced from 40px
                     borderRadius: '50%',
                     backgroundColor: 'rgba(0,0,0,0.6)',
                     border: '2px solid white',

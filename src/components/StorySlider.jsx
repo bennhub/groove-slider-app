@@ -66,8 +66,11 @@ import "./sessionStyles.css";
 import WaveformVisualizer from "./WaveformVisualizer";
 // Beat detect
 import { analyze } from "web-audio-beat-detector";
-// Audius Track Search
+// Track Imports
+import MyMusicLibrary from "./MyMusicLibrary";
 import AudiusTrackSearch from "./AudiusTrackSearch";
+import { APP_CONFIG } from "./AppConfig";
+
 
 //==============================================
 // DEVICE DETECTION
@@ -282,6 +285,7 @@ const MusicPanel = ({
   const [audioContext, setAudioContext] = useState(null);
   const timeUpdateRef = useRef(null);
   const [title, setTitle] = useState("");
+  const [isMyMusicModalOpen, setIsMyMusicModalOpen] = useState(false);
 
   // Reference to store the intended playback position
   const intendedTimeRef = useRef(null);
@@ -789,122 +793,180 @@ const MusicPanel = ({
             />
           </label>*/}
           
-          {/* New Audius Tracks Button */}
-          <button
-            onClick={() => setIsAudiusModalOpen(true)}
-            style={{
-              background: "#6c0d9c",
-              color: "white",
-              border: "solid 2px #fbf8cd",
-              padding: "10px",
-              borderRadius: "5px",
-              display: "flex",
-              alignItems: "center",
-              textAlign: "left",
-              gap: "10px",
-              marginTop: "40px",
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-12.5v9l6-4.5z" />
-            </svg>
-            Add Music
-          </button>
+         {/* First, add the APP_CONFIG import to the top of your file */}
 
-          {/* Audius Tracks Modal - Simplified */}
-          {isAudiusModalOpen && (
-            <AudiusTrackSearch
-              onTrackSelect={(track) => {
-                try {
-                  // The track object should have a streamUrl property
-                  if (!track.streamUrl) {
-                    throw new Error("Track doesn't have a streamUrl");
-                  }
+{/* Music Source Buttons */}
+{/* Your Music Library Button */}
+{APP_CONFIG.enableLocalMusicLibrary && (
+  <button
+    onClick={() => setIsMyMusicModalOpen(true)}
+    style={{
+      background: "#6c0d9c",
+      color: "white",
+      border: "solid 2px #fbf8cd",
+      padding: "10px",
+      borderRadius: "5px",
+      display: "flex",
+      alignItems: "center",
+      textAlign: "left",
+      gap: "10px",
+      marginTop: "40px",
+    }}
+  >
+    <Music size={24} />
+    Add Music
+  </button>
+)}
 
-                  // Set the music URL
-                  onUpload(track.streamUrl);
+{/* Audius Tracks Button - only shown if enabled in config */}
+{APP_CONFIG.enableAudiusStreaming && (
+  <button
+    onClick={() => setIsAudiusModalOpen(true)}
+    style={{
+      background: "#6c0d9c",
+      color: "white",
+      border: "solid 2px #fbf8cd",
+      padding: "10px",
+      borderRadius: "5px",
+      display: "flex",
+      alignItems: "center",
+      textAlign: "left",
+      gap: "10px",
+      marginTop: APP_CONFIG.enableLocalMusicLibrary ? "10px" : "40px",
+    }}
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-12.5v9l6-4.5z" />
+    </svg>
+    Audius Streaming
+  </button>
+)}
 
-                  // Use the BPM from the track if available, otherwise default to 120
-                  const trackBPM = track.bpm || 120;
-                  console.log(`Using track BPM: ${trackBPM}`);
-                  onBPMChange(trackBPM);
+{/* My Music Library Modal */}
+{isMyMusicModalOpen && (
+  <MyMusicLibrary
+    onTrackSelect={(track) => {
+      try {
+        // Set the music URL
+        onUpload(track.streamUrl);
 
-                  // Reset start point to beginning
-                  onStartPointChange(0);
+        // Use the BPM from the track
+        onBPMChange(track.bpm || 120);
 
-                  // Reset audio state
-                  if (controlsRef.current) {
-                    controlsRef.current.src = track.streamUrl;
-                    controlsRef.current.currentTime = 0;
-                  }
+        // Reset start point to beginning
+        onStartPointChange(0);
 
-                  // Close the modal
-                  setIsAudiusModalOpen(false);
-                } catch (error) {
-                  console.error("Error selecting Audius track:", error);
-                  alert("Unable to play this track. Please try another one.");
-                }
-              }}
-              onClose={() => setIsAudiusModalOpen(false)}
-            />
-          )}
-        </div>
+        // Reset audio state
+        if (controlsRef.current) {
+          controlsRef.current.src = track.streamUrl;
+          controlsRef.current.currentTime = 0;
+        }
 
-        <div className="music-player">
-          <audio
-            ref={controlsRef}
-            src={musicUrl}
-            onTimeUpdate={handleTimeUpdate}
-            preload="auto" // Ensure audio is fully loaded
-          />
+        // Close the modal
+        setIsMyMusicModalOpen(false);
+      } catch (error) {
+        console.error("Error selecting track:", error);
+        alert("Unable to load this track. Please try another one.");
+      }
+    }}
+    onClose={() => setIsMyMusicModalOpen(false)}
+  />
+)}
 
-          {musicUrl && (
-            <div className="music-info">
-              <span>
-                {fileName && fileName.length > 35
-                  ? `${fileName.slice(0, 35)}...`
-                  : musicUrl &&
-                    musicUrl.includes(
-                      "https://lingering-surf-27dd.benhayze.workers.dev/"
-                    )
-                  ? `${title || "Audius Track"}`
-                  : fileName || "Track Title"}
-              </span>
-            </div>
-          )}
+{/* Audius Tracks Modal - Simplified */}
+{isAudiusModalOpen && APP_CONFIG.enableAudiusStreaming && (
+  <AudiusTrackSearch
+    onTrackSelect={(track) => {
+      try {
+        // The track object should have a streamUrl property
+        if (!track.streamUrl) {
+          throw new Error("Track doesn't have a streamUrl");
+        }
 
-          <button className="audio-control-button" onClick={handlePlayPause}>
-            {isPlaying ? <Pause size={32} /> : <Play size={32} />}
-          </button>
+        // Set the music URL
+        onUpload(track.streamUrl);
 
-          {/* Waveform visualizer with millisecond precision */}
-          {musicUrl && (
-            <WaveformVisualizer
-              audioUrl={musicUrl}
-              audioRef={audioRef}
-              onStartPointChange={(time) => {
-                // Round to 3 decimal places for consistent millisecond precision
-                const preciseTime = Math.round(time * 1000) / 1000;
+        // Use the BPM from the track if available, otherwise default to 120
+        const trackBPM = track.bpm || 120;
+        console.log(`Using track BPM: ${trackBPM}`);
+        onBPMChange(trackBPM);
 
-                // Update intended time reference
-                intendedTimeRef.current = preciseTime;
+        // Reset start point to beginning
+        onStartPointChange(0);
 
-                // Update component and app state
-                onStartPointChange(preciseTime);
-                if (controlsRef.current) {
-                  controlsRef.current.currentTime = preciseTime;
-                }
-              }}
-              musicStartPoint={musicStartPoint}
-            />
-          )}
-        </div>
+        // Reset audio state
+        if (controlsRef.current) {
+          controlsRef.current.src = track.streamUrl;
+          controlsRef.current.currentTime = 0;
+        }
+
+        // Close the modal
+        setIsAudiusModalOpen(false);
+      } catch (error) {
+        console.error("Error selecting Audius track:", error);
+        alert("Unable to play this track. Please try another one.");
+      }
+    }}
+    onClose={() => setIsAudiusModalOpen(false)}
+  />
+)}
+</div>
+
+<div className="music-player">
+  <audio
+    ref={controlsRef}
+    src={musicUrl}
+    onTimeUpdate={handleTimeUpdate}
+    preload="auto" // Ensure audio is fully loaded
+  />
+
+  {musicUrl && (
+    <div className="music-info">
+      <span>
+        {fileName && fileName.length > 35
+          ? `${fileName.slice(0, 35)}...`
+          : musicUrl &&
+            musicUrl.includes(
+              "https://lingering-surf-27dd.benhayze.workers.dev/"
+            )
+          ? `${title || "Audius Track"}`
+          : fileName || "Track Title"}
+      </span>
+    </div>
+  )}
+
+  <button className="audio-control-button" onClick={handlePlayPause}>
+    {isPlaying ? <Pause size={32} /> : <Play size={32} />}
+  </button>
+
+  {/* Waveform visualizer with millisecond precision */}
+  {musicUrl && (
+    <WaveformVisualizer
+      audioUrl={musicUrl}
+      audioRef={audioRef}
+      onStartPointChange={(time) => {
+        // Round to 3 decimal places for consistent millisecond precision
+        const preciseTime = Math.round(time * 1000) / 1000;
+
+        // Update intended time reference
+        intendedTimeRef.current = preciseTime;
+
+        // Update component and app state
+        onStartPointChange(preciseTime);
+        if (controlsRef.current) {
+          controlsRef.current.currentTime = preciseTime;
+        }
+      }}
+      musicStartPoint={musicStartPoint}
+    />
+  )}
+</div>
       </div>
     </div>
   );

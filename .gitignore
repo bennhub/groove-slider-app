@@ -28,4 +28,5 @@ app-release-signed.apk
 android.keystore
 app-release-signed.apk.idsig
 app-release-unsigned-aligned.apk
+.gradle/
 

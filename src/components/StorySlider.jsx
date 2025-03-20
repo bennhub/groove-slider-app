@@ -162,7 +162,7 @@ const GrooveGalleryLanding = ({
               <Settings />
             </span>
           </button>
-          <h1 className="app-title">Groove Slider v1.2.6</h1>
+          <h1 className="app-title">Groove Slider v1.3.6</h1>
           {/* Always visible close button */}
           <button className="close-landing-button" onClick={onClose}>
             <X size={24} />

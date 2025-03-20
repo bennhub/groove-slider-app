@@ -24,7 +24,14 @@ jobs:
 
       - name: Build
         run: npm run build
-
+        
+      - name: Copy .well-known directory and config files to dist
+        run: |
+          mkdir -p ./dist/.well-known
+          cp ./.well-known/assetlinks.json ./dist/.well-known/
+          cp .nojekyll ./dist/ || touch ./dist/.nojekyll
+          cp _config.yml ./dist/ || echo "include: ['.well-known']" > ./dist/_config.yml
+          
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:

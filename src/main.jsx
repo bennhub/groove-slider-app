@@ -2,32 +2,24 @@ import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
+import { registerSW } from 'virtual:pwa-register';
 
 function Main() {
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
 
-  // Service Worker Registration
+  // PWA service worker registration with vite-plugin-pwa
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-        try {
-          console.log('Attempting to register service worker');
-          console.log('Current origin:', window.location.origin);
-          console.log('Current pathname:', window.location.pathname);
-
-          const registration = await navigator.serviceWorker.register('/groove-slider-img/sw.js', {
-            scope: '/groove-slider-img/',
-            type: 'classic'
-          });
-          
-          console.log('Service Worker registered successfully:', registration);
-          console.log('Registration scope:', registration.scope);
-        } catch (error) {
-          console.error('Service Worker registration failed:', error);
-          console.error('Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-        }
-      });
-    }
+    // Register service worker using vite-plugin-pwa
+    const updateSW = registerSW({
+      onNeedRefresh() {
+        // App needs refresh because new content is available
+        setUpdateAvailable(true);
+      },
+      onOfflineReady() {
+        console.log('App ready for offline use');
+      }
+    });
 
     // PWA Installation Handler
     const handleBeforeInstallPrompt = (e) => {
@@ -65,9 +57,19 @@ function Main() {
     }
   };
 
+  const handleUpdateClick = () => {
+    // This function will reload the page to update to the latest version
+    window.location.reload();
+  };
+
   return (
     <StrictMode>
-      <App installPrompt={installPrompt} onInstallClick={handleInstallClick} />
+      <App 
+        installPrompt={installPrompt} 
+        onInstallClick={handleInstallClick}
+        updateAvailable={updateAvailable}
+        onUpdateClick={handleUpdateClick}
+      />
     </StrictMode>
   );
 }

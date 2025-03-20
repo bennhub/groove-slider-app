@@ -1,9 +1,70 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['icons/*.png', 'screenshots/*.png'],
+      manifest: {
+        id: 'groove-gallery-app',
+        name: 'Groove Gallery',
+        short_name: 'Groove Slider',
+        description: 'Create dynamic image slideshows synced to music',
+        theme_color: '#000000',
+        background_color: '#000000',
+        display: 'standalone',
+        orientation: 'portrait',
+        scope: '/groove-slider-img/',
+        start_url: '/groove-slider-img/',
+        dir: 'ltr',
+        lang: 'en',
+        categories: ['photo', 'entertainment', 'multimedia'],
+        icons: [
+          {
+            src: '/groove-slider-img/icons/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: '/groove-slider-img/icons/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,webp,woff,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/unpkg\.com\/@ffmpeg\/core/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ffmpeg-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/api\.audius\.co/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'audius-api-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+              }
+            }
+          }
+        ]
+      }
+    })
+  ],
   base: '/groove-slider-img/',
   resolve: {
     alias: {

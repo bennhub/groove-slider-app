@@ -1,0 +1,3 @@
+<Files "sw.js">
+    Header set Content-Type "application/javascript"
+</Files>

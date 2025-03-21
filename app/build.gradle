@@ -23,7 +23,7 @@ plugins {
 def twaManifest = [
     applicationId: 'io.github.bennhub.twa',
     hostName: 'bennhub.github.io', // The domain being opened in the TWA.
-    launchUrl: '/groove-slider-img/', // The start path for the TWA. Must be relative to the domain.
+    launchUrl: '/groove-slider-app/', // The start path for the TWA. Must be relative to the domain.
     name: 'Groove Gallery', // The application name.
     launcherName: 'GrooveGal', // The name shown on the Android Launcher.
     themeColor: '#000000', // The color used for the status bar.
@@ -74,12 +74,12 @@ android {
             // The URL the Web Manifest for the Progressive Web App that the TWA points to. This
             // is used by Chrome OS and Meta Quest to open the Web version of the PWA instead of
             // the TWA, as it will probably give a better user experience for non-mobile devices.
-            resValue "string", "webManifestUrl", 'https://bennhub.github.io/groove-slider-img/manifest.json'
+            resValue "string", "webManifestUrl", 'https://bennhub.github.io/groove-slider-app/manifest.json'
         
 
         
             // This is used by Meta Quest.
-            resValue "string", "fullScopeUrl", 'https://bennhub.github.io/groove-slider-img/'
+            resValue "string", "fullScopeUrl", 'https://bennhub.github.io/groove-slider-app/'
         
 
         

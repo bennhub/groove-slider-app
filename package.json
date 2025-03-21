@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://bennhub.github.io/groove-slider-img/",
+  "homepage": "https://bennhub.github.app",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

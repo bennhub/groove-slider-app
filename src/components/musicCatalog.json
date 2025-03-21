@@ -6,8 +6,8 @@
       "artist": "Fox & Hayes",
       "bpm": 120,
       "genre": "Rap/House",
-      "streamUrl": "/groove-slider-img/music/FOX_HAYES_THAT'S COOL.mp3",
-      "coverArt": "/groove-slider-img/assets/FOX_HAYES_THAT'S COOL.jpg .jpg"
+      "streamUrl": "/groove-slider-app/music/FOX_HAYES_THAT'S COOL.mp3",
+      "coverArt": "/groove-slider-app/assets/FOX_HAYES_THAT'S COOL.jpg .jpg"
     },
     {
       "id": "track2", 
@@ -15,8 +15,8 @@
       "artist": "Fox & Hayes",
       "bpm": 120,
       "genre": "Rap/House",
-      "streamUrl": "/groove-slider-img/music/FOX_HAYES _BOUNCE.mp3",
-      "coverArt": "/groove-slider-img/assets/FOX_HAYES_BOUNCE.jpg"
+      "streamUrl": "/groove-slider-app/music/FOX_HAYES _BOUNCE.mp3",
+      "coverArt": "/groove-slider-app/assets/FOX_HAYES_BOUNCE.jpg"
     },
     {
       "id": "track3",
@@ -24,8 +24,8 @@
       "artist": "Fox & Hayes",
       "bpm": 70,
       "genre": "Hip-Hop",
-      "streamUrl": "/groove-slider-img/music/FOX_HAYES_ BLUEBERRY_MERLOT.mp3",
-      "coverArt": "/groove-slider-img/assets/FOX_HAYES_BLUEBERRY_MERLOT.jpg"
+      "streamUrl": "/groove-slider-app/music/FOX_HAYES_ BLUEBERRY_MERLOT.mp3",
+      "coverArt": "/groove-slider-app/assets/FOX_HAYES_BLUEBERRY_MERLOT.jpg"
     },
     {
       "id": "track4",
@@ -33,8 +33,8 @@
       "artist": "Fox & Hayes",
       "bpm": 90,
       "genre": "Hip-Hop",
-      "streamUrl": "/groove-slider-img/music/FOX_HAYES_RAINDROPS.mp3",
-      "coverArt": "/groove-slider-img/assets/FOX _HAYES_RAINDROPS.jpg"
+      "streamUrl": "/groove-slider-app/music/FOX_HAYES_RAINDROPS.mp3",
+      "coverArt": "/groove-slider-app/assets/FOX _HAYES_RAINDROPS.jpg"
     }
   ]
 }

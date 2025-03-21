@@ -18,19 +18,19 @@ export default defineConfig({
         background_color: '#000000',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/groove-slider-img/',
-        start_url: '/groove-slider-img/',
+        scope: '/groove-slider-app/',
+        start_url: '/groove-slider-app/',
         dir: 'ltr',
         lang: 'en',
         categories: ['photo', 'entertainment', 'multimedia'],
         icons: [
           {
-            src: '/groove-slider-img/icons/icon-192.png',
+            src: '/groove-slider-app/icons/icon-192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/groove-slider-img/icons/icon-512.png',
+            src: '/groove-slider-app/icons/icon-512.png',
             sizes: '512x512',
             type: 'image/png'
           }
@@ -65,7 +65,7 @@ export default defineConfig({
       }
     })
   ],
-  base: '/groove-slider-img/',
+  base: '/groove-slider-app/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

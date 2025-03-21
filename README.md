@@ -116,4 +116,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Framer Motion for smooth animations
 - Lucide React for beautiful icons
 - Capacitor for mobile support
-# groove-slider-img
+# groove-slider-app

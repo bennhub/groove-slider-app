@@ -16,7 +16,7 @@
 
 <!-- The "package" attribute is rewritten by the Gradle build with the value of applicationId.
      It is still required here, as it is used to derive paths, for instance when referring
-     to an Activity by ".MyActivity" instead of the full name. If more Activities are added to the
+     to an Activity by ".MyActivity" instead of the      name. If more Activities are added to the
      application, the package attribute will need to reflect the correct path in order to use
      the abbreviated format. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -120,6 +120,9 @@
             
 
             
+            <meta-data android:name="android.support.customtabs.trusted.DISPLAY_MODE"
+                android:value="immersive" />
+            
 
             <meta-data android:name="android.support.customtabs.trusted.SCREEN_ORIENTATION"
                 android:value="@string/orientation"/>
@@ -133,16 +136,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https"
                     android:host="@string/hostName"
-                
-                    android:pathPrefix="/groove-slider-app/"
-                
-                />
+                    android:pathPrefix="/groove-slider-app" />
             </intent-filter>
 
             

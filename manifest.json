@@ -5,7 +5,7 @@
     "description": "Create dynamic image slideshows synced to music",
     "start_url": "/groove-slider-app/",
     "scope": "/groove-slider-app/",
-    "display": "standalone",
+    "display": "fullscreen",
     "display_override": ["window-controls-overlay"],
     "orientation": "portrait",
     "dir": "ltr",
@@ -39,4 +39,4 @@
             "type": "image/png"
         }
     ]
-  }
+}

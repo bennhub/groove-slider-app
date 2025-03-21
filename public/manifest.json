@@ -6,6 +6,7 @@
     "start_url": "/groove-slider-img/",
     "scope": "/groove-slider-img/",
     "display": "standalone",
+    "display_override": ["window-controls-overlay"],
     "orientation": "portrait",
     "dir": "ltr",
     "lang": "en",

@@ -7,7 +7,6 @@
  "scripts": {
   "dev": "vite",
   "build": "vite build",
-  "postbuild": "mkdir -p dist/ffmpeg && cp -r static/ffmpeg/* dist/ffmpeg/",
   "lint": "eslint .",
   "preview": "vite preview"
 },

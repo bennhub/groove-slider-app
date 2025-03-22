@@ -8,24 +8,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Groove Gallery</title>
     <style>
-      /* Disable touch zooming on the entire app */
+      /* Disable general zooming on the app but allow it for interactive elements */
       html, body {
-        touch-action: manipulation;
-        -ms-touch-action: manipulation;
-        overflow: hidden;
         overscroll-behavior: none;
       }
-
-      /* Apply to the root container as well */
-      #root {
-        touch-action: manipulation;
-        -webkit-touch-callout: none;
-        -webkit-user-select: none;
-        -khtml-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-        overscroll-behavior: none;
+      
+      /* Specifically allow touch actions on the audio slider */
+      .progress-slider, 
+      .audio-progress,
+      input[type="range"] {
+        touch-action: pan-x; /* Allow horizontal panning/sliding */
+        -ms-touch-action: pan-x;
+      }
+      
+      /* For the waveform visualizer if you have one */
+      .waveform-container,
+      .waveform-visualizer {
+        touch-action: pan-x;
+        -ms-touch-action: pan-x;
       }
     </style>
   </head>
@@ -33,25 +33,49 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      // Prevent pinch zoom on touch devices
-      document.addEventListener('gesturestart', function(e) {
-        e.preventDefault();
-      });
-
-      document.addEventListener('gesturechange', function(e) {
-        e.preventDefault();
-      });
-
-      document.addEventListener('gestureend', function(e) {
-        e.preventDefault();
-      });
-
-      // Additional protection for iOS Safari
-      document.addEventListener('touchmove', function(e) {
-        if (e.scale !== 1) {
-          e.preventDefault();
+      // Only prevent pinch zoom gestures, not sliding motions
+      document.addEventListener('DOMContentLoaded', () => {
+        // Function to detect if an element is a slider or within a slider
+        function isSliderElement(element) {
+          if (!element) return false;
+          
+          // Check the element and its parents for slider-related classes
+          let current = element;
+          while (current && current !== document.body) {
+            // Check for your specific slider classes
+            if (
+              current.classList.contains('progress-slider') ||
+              current.classList.contains('audio-progress') ||
+              current.tagName === 'INPUT' && current.type === 'range' ||
+              current.classList.contains('waveform-container') ||
+              current.classList.contains('waveform-visualizer')
+            ) {
+              return true;
+            }
+            current = current.parentElement;
+          }
+          return false;
         }
-      }, { passive: false });
+
+        // Handle only multi-touch zoom gestures
+        document.addEventListener('touchstart', function(e) {
+          // Only worry about multi-touch events (zoom gestures)
+          if (e.touches.length <= 1) return;
+          
+          // If the touch is on a slider, allow it
+          if (isSliderElement(e.target)) return;
+          
+          // Otherwise prevent zooming
+          e.preventDefault();
+        }, { passive: false });
+        
+        // Similarly for touchmove
+        document.addEventListener('touchmove', function(e) {
+          if (e.touches.length <= 1) return;
+          if (isSliderElement(e.target)) return;
+          e.preventDefault();
+        }, { passive: false });
+      });
     </script>
   </body>
 </html>

@@ -2,7 +2,7 @@
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
-    "package_name": "io.github.bennhub.twa",
-    "sha256_cert_fingerprints": ["F0:44:06:86:A3:4D:AE:31:5F:C4:CD:14:27:4A:C7:17:E5:6E:C1:A9:6C:BD:CA:7F:89:4F:78:7A:A6:55:02:B3"]
+    "package_name": "app.netlify.groove_slider_app.twa",
+    "sha256_cert_fingerprints": ["4D:05:FC:1A:17:1D:E8:2C:6E:93:66:CD:74:51:35:20:28:F1:73:E5:E3:11:6B:96:E4:F3:5A:B3:29:DA:AF:20"]
   }
 }]

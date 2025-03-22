@@ -10,8 +10,8 @@ async function preloadFFmpeg() {
     if ('caches' in window) {
       const cache = await caches.open('groove-gallery-cache-v1');
       const urls = [
-        'https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.js',
-        'https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.wasm'
+         '/ffmpeg/ffmpeg-core.js',
+        '/ffmpeg/ffmpeg-core.wasm'
       ];
       
       // Check if already cached

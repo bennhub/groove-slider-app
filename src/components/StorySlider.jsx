@@ -107,8 +107,8 @@ const loadFFmpeg = async () => {
     
     // Use CDN URLs for loading the core and WASM files
     await ffmpeg.load({
-      corePath: "https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.js",
-      wasmPath: "https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.wasm"
+      corePath: "/ffmpeg/ffmpeg-core.js",
+      wasmPath: "/ffmpeg/ffmpeg-core.wasm"
     });
     
     console.log("FFmpeg loaded successfully");

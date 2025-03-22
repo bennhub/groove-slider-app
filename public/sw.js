@@ -6,8 +6,8 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  'https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.js',
-  'https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.wasm',
+  '/ffmpeg/ffmpeg-core.js',
+  '/ffmpeg/ffmpeg-core.wasm',
 ];
 
 self.addEventListener("install", (event) => {
@@ -28,7 +28,7 @@ self.addEventListener("fetch", (event) => {
         return caches.open(CACHE_NAME).then((cache) => {
           // Cache FFmpeg files and app assets
           if (event.request.url.includes('/assets/') || 
-              event.request.url.includes('@ffmpeg/core')) {
+              event.request.url.includes('/ffmpeg/')) {
             cache.put(event.request, networkResponse.clone());
           }
           return networkResponse;

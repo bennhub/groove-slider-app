@@ -42,11 +42,11 @@ export default defineConfig(({ command }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,webp,woff,woff2}'],
-          // We'll rely on runtime caching for FFmpeg files rather than bundling them
+          // Configure to cache local FFmpeg files
           runtimeCaching: [
             {
-              // Update to match both unpkg.com and any other CDN you might be using
-              urlPattern: /^https:\/\/(unpkg\.com|cdn\.jsdelivr\.net)\/@ffmpeg\/core/,
+              // Cache local FFmpeg files
+              urlPattern: /\/ffmpeg\//,
               handler: 'CacheFirst',
               options: {
                 cacheName: 'ffmpeg-cache',
@@ -54,7 +54,6 @@ export default defineConfig(({ command }) => {
                   maxEntries: 10,
                   maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
                 },
-                // This ensures the resources are cached even during the initial load
                 cacheableResponse: {
                   statuses: [0, 200]
                 }

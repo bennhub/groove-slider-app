@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "homepage": "https://bennhub.github.app",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
+ "scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "postbuild": "mkdir -p dist/ffmpeg && cp -r static/ffmpeg/* dist/ffmpeg/",
+  "lint": "eslint .",
+  "preview": "vite preview"
+},
   "dependencies": {
     "@ffmpeg/core": "^0.12.10",
     "@ffmpeg/ffmpeg": "^0.12.15",

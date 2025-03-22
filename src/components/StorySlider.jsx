@@ -2293,14 +2293,18 @@ const BottomMenu = ({
   const [showMusicPanel, setShowMusicPanel] = useState(false);
   const [selectedBar, setSelectedBar] = useState(1);
   useEffect(() => {
-    const barOptions = [0.125, 0.25, 0.5, 1, 2, 4, 8, 16];
+    const barOptions = [0.125, 0.25, 0.5, 1, 2, 4];
     const matchedBar = barOptions.find(
       (option) => Math.abs((duration * bpm) / (4 * 60) - option) < 0.01
     );
     if (matchedBar) {
       setSelectedBar(matchedBar);
+    } else {
+      // Default to 1 bar if no match found
+      setSelectedBar(1);
     }
   }, [duration, bpm]);
+  
   // Calculate duration based on BPM and selected bar length
   const calculateDuration = (bars, bpm) => {
     // Duration = (bars * beats per bar * seconds per beat)
@@ -2309,10 +2313,15 @@ const BottomMenu = ({
     return (bars * 4 * 60) / bpm;
   };
   const handleBarChange = (bars) => {
+    // Stop playback if currently playing
+    if (isPlaying) {
+      onPlayPause(); 
+    }
     setSelectedBar(bars);
-    const newDuration = calculateDuration(bars, currentBPM);
+    const newDuration = calculateDuration(bars, bpm);
     onDurationChange(newDuration);
   };
+  
   const barOptions = [
     { value: 0.125, label: "⅛ Bar" },
     { value: 0.25, label: "¼ Bar" },
@@ -2320,8 +2329,6 @@ const BottomMenu = ({
     { value: 1, label: "1 Bar" },
     { value: 2, label: "2 Bars" },
     { value: 4, label: "4 Bars" },
-    { value: 8, label: "8 Bars" },
-    { value: 16, label: "16 Bars" },
   ];
   // Function to toggle duration panel
   const toggleDurationPanel = () => {
@@ -2379,22 +2386,24 @@ const BottomMenu = ({
                 { value: 1, label: "1 Bar" },
                 { value: 2, label: "2 Bars" },
                 { value: 4, label: "4 Bars" },
-                { value: 8, label: "8 Bars" },
-                { value: 16, label: "16 Bars" },
               ].map((option) => (
                 <button
-                  key={option.value}
-                  className={`bar-option ${
-                    selectedBar === option.value ? "selected" : ""
-                  }`}
-                  onClick={() => {
-                    const newDuration = calculateDuration(option.value, bpm);
-                    setSelectedBar(option.value);
-                    onDurationChange(newDuration);
-                  }}
-                >
-                  {option.label}
-                </button>
+                key={option.value}
+                className={`bar-option ${selectedBar === option.value ? "selected" : ""}`}
+                onClick={() => {
+                  // OPTION #1: Stop playback if currently playing
+                  if (isPlaying) {
+                    onPlayPause(); // This will stop music and slideshow
+                  }
+                  
+                  // Now update the bar selection and duration
+                  const newDuration = calculateDuration(option.value, bpm);
+                  setSelectedBar(option.value);
+                  onDurationChange(newDuration);
+                }}
+              >
+                {option.label}
+              </button>
               ))}
             </div>
             <div className="duration-info">
@@ -2662,7 +2671,7 @@ const StorySlider = () => {
   const [musicStartPoint, setMusicStartPoint] = useState(0);
   // Audius Track Search
   // Looping State
-  const [isLoopingEnabled, setIsLoopingEnabled] = useState(true);
+  const [isLoopingEnabled, setIsLoopingEnabled] = useState(false);
   // Image Preload
   const [preloadedImages, setPreloadedImages] = useState({});
   // Touch State
@@ -2995,7 +3004,7 @@ const StorySlider = () => {
   };
   const handleBPMChange = (newBPM) => {
     setBpm(newBPM);
-    const barOptions = [0.125, 0.25, 0.5, 1, 2, 4, 8, 16];
+    const barOptions = [0.125, 0.25, 0.5, 1, 2, 4];
     const currentBarOption =
       barOptions.find(
         (option) => Math.abs((duration * newBPM) / (4 * 60) - option) < 0.01
@@ -3058,50 +3067,39 @@ const StorySlider = () => {
       setIsPlaying(false);
     } else {
       // Play logic
-      // Always reset to first slide when starting playback
-      setCurrentIndex(0);
-
+      // Always reset to first slide when starting playback if at end
+      if (currentIndex >= stories.length - 1) {
+        setCurrentIndex(0);
+      }
+  
       try {
-        // Instead of creating a new Audio element, update the existing one
-        if (audioRef.current) {
-          // Set the source if needed
-          if (audioRef.current.src !== musicUrl) {
-            audioRef.current.src = musicUrl;
+        // Handle audio playback
+        if (musicUrl) {
+          if (audioRef.current) {
+            // Set the source if needed
+            if (audioRef.current.src !== musicUrl) {
+              audioRef.current.src = musicUrl;
+            }
+  
+            // Set the current time to the start point
+            audioRef.current.currentTime = musicStartPoint;
+  
+            // Try to play the audio
+            try {
+              await audioRef.current.play();
+            } catch (err) {
+              console.error("Play error:", err);
+              alert("Unable to play audio. The slideshow will continue without music.");
+            }
           }
-
-          // Set the current time to the start point
-          audioRef.current.currentTime = musicStartPoint;
-
-          // Start the slideshow
-          startAutoRotation();
-
-          // Try to play the audio
-          console.log("Attempting to play using existing audio reference");
-          await audioRef.current.play();
-          console.log("Playback started with existing audio reference");
-        } else {
-          // Fallback if no audio reference exists
-          const newAudio = new Audio(musicUrl);
-          newAudio.currentTime = musicStartPoint;
-          audioRef.current = newAudio;
-
-          // Start the slideshow
-          startAutoRotation();
-
-          await newAudio.play();
-          console.log("Playback started with new audio reference");
         }
-
-        setIsPlaying(true);
-      } catch (err) {
-        console.error("Play error:", err);
-        alert(
-          "Unable to play audio. The slideshow will continue without music."
-        );
-
-        // Continue with slideshow even if audio fails
+        
+        // Always start the slideshow rotation (even if audio fails)
         startAutoRotation();
         setIsPlaying(true);
+      } catch (err) {
+        console.error("Playback error:", err);
+        alert("Unable to start slideshow. Please try again.");
       }
     }
   };
@@ -3154,13 +3152,15 @@ const StorySlider = () => {
   useEffect(() => {
     return () => stopAutoRotation();
   }, []);
-  // Sync duration changes
-  useEffect(() => {
+
+  // Sync duration changes -  future feature
+  /*useEffect(() => {
     if (isPlaying) {
       stopAutoRotation();
       startAutoRotation();
     }
-  }, [duration]);
+  }, [duration]);*/
+
   // Clear Session
   const handleClearSession = () => {
     if (stories.length > 0) {

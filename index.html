@@ -5,11 +5,53 @@
     <!-- Remove the base tag completely -->
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Groove Gallery</title>
+    <style>
+      /* Disable touch zooming on the entire app */
+      html, body {
+        touch-action: manipulation;
+        -ms-touch-action: manipulation;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+
+      /* Apply to the root container as well */
+      #root {
+        touch-action: manipulation;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        overscroll-behavior: none;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Prevent pinch zoom on touch devices
+      document.addEventListener('gesturestart', function(e) {
+        e.preventDefault();
+      });
+
+      document.addEventListener('gesturechange', function(e) {
+        e.preventDefault();
+      });
+
+      document.addEventListener('gestureend', function(e) {
+        e.preventDefault();
+      });
+
+      // Additional protection for iOS Safari
+      document.addEventListener('touchmove', function(e) {
+        if (e.scale !== 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    </script>
   </body>
 </html>

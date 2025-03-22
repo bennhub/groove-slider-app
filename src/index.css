@@ -1220,7 +1220,7 @@ img {
   width: 100%;
   max-width: none;
   transform: none;
-  background: rgba(50, 33, 33, 0.9);
+  background: rgba(50, 33, 33, 0.7);
   padding: var(--spacing-lg);
   z-index: var(--z-index-menu);
   overflow-y: auto;
@@ -1412,7 +1412,7 @@ img {
   left: 0;
   right: 0;
   width: 100%;
-  background-color: rgba(50, 33, 33, 0.9);
+  background-color: rgba(50, 33, 33, 0.7);
   padding: var(--spacing-xxl) var(--spacing-lg);
   min-height: 120px;
   animation: slideUp var(--transition-standard);
@@ -1529,7 +1529,7 @@ img {
   width: 100%;
   max-width: none;
   transform: none;
-  background: rgba(50, 33, 33, 0.9);
+  background: rgba(50, 33, 33, 0.7);
   padding: var(--spacing-xs);
   border: 5px solid var(--color-border-primary);
   border-top-left-radius: var(--border-radius-md);

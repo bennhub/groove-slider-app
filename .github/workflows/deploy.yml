@@ -28,7 +28,7 @@ jobs:
       - name: Copy .well-known directory and config files to dist
         run: |
           mkdir -p ./dist/.well-known
-          cp ./.well-known/assetlinks.json ./dist/.well-known/
+          cp ./public/.well-known/assetlinks.json ./dist/.well-known/ || echo "No assetlinks.json found, skipping"
           cp .nojekyll ./dist/ || touch ./dist/.nojekyll
           cp _config.yml ./dist/ || echo "include: ['.well-known']" > ./dist/_config.yml
           

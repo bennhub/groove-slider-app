@@ -2,7 +2,7 @@
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
-    "package_name": "app.netlify.groove_slider_app.twa",
-    "sha256_cert_fingerprints": ["4D:05:FC:1A:17:1D:E8:2C:6E:93:66:CD:74:51:35:20:28:F1:73:E5:E3:11:6B:96:E4:F3:5A:B3:29:DA:AF:20"]
+    "package_name": "dev.pages.groove_slider_app.app_8720b9c5.twa",
+    "sha256_cert_fingerprints": ["FB:D6:9B:52:60:C2:CF:38:86:7E:90:95:C3:4B:DA:5C:41:D3:C7:67:DB:4C:17:18:27:80:EF:36:F9:F6:81:00"]
   }
 }]

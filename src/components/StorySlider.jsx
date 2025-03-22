@@ -97,23 +97,22 @@ const useDeviceType = () => {
 //==============================================
 // UTILITIES / SERVICES
 //==============================================
-const ffmpeg = new FFmpeg({
-  log: true,
-  corePath: "https://unpkg.com/@ffmpeg/core@0.12.4/dist/ffmpeg-core.js",
-  wasmPath: "https://unpkg.com/@ffmpeg/core@0.12.4/dist/ffmpeg-core.wasm",
-});
-// Add this function right after the ffmpeg configuration
+// Create the FFmpeg instance without hardcoded paths initially
+const ffmpeg = new FFmpeg({ log: true });
+
+// Load FFmpeg with CDN URLs
 const loadFFmpeg = async () => {
   try {
     console.log("Starting FFmpeg load...");
-    // Explicitly set full URLs for core and wasm
+    
+    // Use CDN URLs for loading the core and WASM files
     await ffmpeg.load({
-      corePath:
-        "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.15/dist/ffmpeg-core.js",
-      wasmPath:
-        "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.15/dist/ffmpeg-core.wasm",
+      corePath: "https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.js",
+      wasmPath: "https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.wasm"
     });
+    
     console.log("FFmpeg loaded successfully");
+    return ffmpeg;
   } catch (error) {
     console.error("FFmpeg load error:", error);
     // More detailed error logging
@@ -162,7 +161,7 @@ const GrooveGalleryLanding = ({
               <Settings />
             </span>
           </button>
-          <h1 className="app-title">Groove Slider v1.9.0</h1>
+          <h1 className="app-title">Groove Slider v1.0.1</h1>
           {/* Always visible close button */}
           <button className="close-landing-button" onClick={onClose}>
             <X size={24} />

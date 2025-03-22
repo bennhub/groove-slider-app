@@ -103,8 +103,16 @@ export default defineConfig(({ command }) => {
         input: {
           main: path.resolve(__dirname, 'index.html')
         },
+        external: [
+          // Treat FFmpeg WASM as external to prevent bundling
+          '@ffmpeg/core',
+          '@ffmpeg/core/dist/esm/ffmpeg-core.js',
+          '@ffmpeg/core/dist/esm/ffmpeg-core.wasm'
+        ],
         output: {
+          // Remove ffmpeg from manual chunks to prevent bundling
           manualChunks: {
+            // Keep utils but remove core
             ffmpeg: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
           },
           entryFileNames: 'assets/[name].[hash].js',

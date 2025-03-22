@@ -1,11 +1,11 @@
 const CACHE_NAME = "groove-gallery-cache-v1";
 
 const STATIC_ASSETS = [
-  '/groove-slider-app/',
-  '/groove-slider-app/index.html',
-  '/groove-slider-app/manifest.json',
-  '/groove-slider-app/icons/icon-192.png',
-  '/groove-slider-app/icons/icon-512.png',
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   'https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.js', // Add FFmpeg JS core
   'https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.wasm', // Add FFmpeg WebAssembly file
 ];
@@ -32,7 +32,7 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         });
       });
-    }).catch(() => caches.match('/groove-slider-app/index.html')) // Offline fallback
+    }).catch(() => caches.match('/index.html')) // Offline fallback
   );
 });
 

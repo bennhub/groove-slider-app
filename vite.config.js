@@ -42,15 +42,21 @@ export default defineConfig(({ command }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,webp,woff,woff2}'],
+          // We'll rely on runtime caching for FFmpeg files rather than bundling them
           runtimeCaching: [
             {
-              urlPattern: /^https:\/\/unpkg\.com\/@ffmpeg\/core/,
+              // Update to match both unpkg.com and any other CDN you might be using
+              urlPattern: /^https:\/\/(unpkg\.com|cdn\.jsdelivr\.net)\/@ffmpeg\/core/,
               handler: 'CacheFirst',
               options: {
                 cacheName: 'ffmpeg-cache',
                 expiration: {
                   maxEntries: 10,
                   maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                },
+                // This ensures the resources are cached even during the initial load
+                cacheableResponse: {
+                  statuses: [0, 200]
                 }
               }
             },
@@ -93,12 +99,16 @@ export default defineConfig(({ command }) => {
       },
     },
     optimizeDeps: {
-      exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
+      exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util', '@ffmpeg/core']
     },
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
       sourcemap: false,
+      // Add this option to completely exclude FFmpeg from the build
+      commonjsOptions: {
+        exclude: [/@ffmpeg\/core/, /ffmpeg-core\.wasm/]
+      },
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html')
@@ -107,13 +117,23 @@ export default defineConfig(({ command }) => {
           // Treat FFmpeg WASM as external to prevent bundling
           '@ffmpeg/core',
           '@ffmpeg/core/dist/esm/ffmpeg-core.js',
-          '@ffmpeg/core/dist/esm/ffmpeg-core.wasm'
+          '@ffmpeg/core/dist/esm/ffmpeg-core.wasm',
+          // Add more patterns to ensure all FFmpeg files are excluded
+          /ffmpeg-core\.wasm$/,
+          /ffmpeg\/core/
         ],
         output: {
           // Remove ffmpeg from manual chunks to prevent bundling
-          manualChunks: {
-            // Keep utils but remove core
-            ffmpeg: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
+          manualChunks(id) {
+            // Exclude any FFmpeg core files from chunks
+            if (id.includes('@ffmpeg/core') || id.includes('ffmpeg-core.wasm')) {
+              return null; // Don't include in any chunk
+            }
+            
+            // Only include FFmpeg utility files
+            if (id.includes('@ffmpeg/ffmpeg') || id.includes('@ffmpeg/util')) {
+              return 'ffmpeg-utils';
+            }
           },
           entryFileNames: 'assets/[name].[hash].js',
           chunkFileNames: 'assets/[name].[hash].js',
